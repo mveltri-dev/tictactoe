@@ -13,9 +13,18 @@ public class Game
     public Guid Id { get; private set; }
 
     /// <summary>
-    /// Plateau de jeu représenté par un tableau de 9 cases.
+    /// Largeur du plateau (nombre de colonnes).
+    /// </summary>
+    public int Width { get; private set; }
+
+    /// <summary>
+    /// Hauteur du plateau (nombre de lignes).
+    /// </summary>
+    public int Height { get; private set; }
+
+    /// <summary>
+    /// Plateau de jeu représenté par un tableau de Width*Height cases.
     /// Chaque case peut contenir X, O ou null (vide).
-    /// Index: [0][1][2] / [3][4][5] / [6][7][8]
     /// </summary>
     public PlayerSymbol?[] Board { get; private set; }
 
@@ -60,13 +69,27 @@ public class Game
     /// <param name="playerXId">Identifiant du joueur X.</param>
     /// <param name="playerOId">Identifiant du joueur O.</param>
     /// <param name="mode">Mode de jeu.</param>
-    public Game(Guid playerXId, Guid playerOId, GameMode mode)
+    /// <param name="width">Largeur du plateau (3 par défaut).</param>
+    /// <param name="height">Hauteur du plateau (3 par défaut).</param>
+    public Game(Guid playerXId, Guid playerOId, GameMode mode, int width = 3, int height = 3)
     {
+        if (width < 3)
+        {
+            throw new ArgumentException("La largeur du plateau doit être au minimum 3.", nameof(width));
+        }
+
+        if (height < 3)
+        {
+            throw new ArgumentException("La hauteur du plateau doit être au minimum 3.", nameof(height));
+        }
+
         Id = Guid.NewGuid();
-        Board = new PlayerSymbol?[9]; // Plateau vide
+        Width = width;
+        Height = height;
+        Board = new PlayerSymbol?[width * height]; // Plateau vide de taille width x height
         PlayerXId = playerXId;
         PlayerOId = playerOId;
-        CurrentTurn = PlayerSymbol.X; // X commence toujours (règle classique)
+        CurrentTurn = PlayerSymbol.X; // X commence
         Status = GameStatus.InProgress;
         WinnerId = null;
         CreatedAt = DateTime.UtcNow;
