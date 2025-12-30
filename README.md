@@ -29,13 +29,16 @@ tictactoe/
     │   │
     │   ├── Domain/                       # Couche Domaine
     │   │   ├── Domain.csproj
-    │   │   ├── Entities/                 # Entités métier (Game, Player, Move)
-    │   │   └── Enums/                    # Énumérations (GameStatus, PlayerSymbol)
+    │   │   ├── Entities/                 # Entités métier
+    │   │   └── Enums/                    # Énumérations 
     │   │
     │   ├── Application/                  # Couche Application
     │   │   ├── Application.csproj
-    │   │   ├── DTOs/                     # Data Transfer Objects
-    │   │   └── Services/                 # Services métier (GameService)
+    │   │   ├── DTOs/
+    │   │   │   ├── Requests/             # Requêtes API avec validations
+    │   │   │   └── Responses/            # Réponses API
+    │   │   ├── Mappers/                  # Mappers Entity → DTO
+    │   │   └── Services/                 # Services métier avec gestion d'erreurs
     │   │
     │   ├── Infrastructure/               # Couche Infrastructure
     │   │   ├── Infrastructure.csproj
@@ -141,12 +144,39 @@ L'application sera accessible sur : `http://localhost:5173`
 
 La structure backend suit les principes de la **Clean Architecture** :
 
-- **Domain** : Entités métier pures, sans dépendances externes
-- **Application** : Logique métier, use cases, DTOs
-- **Infrastructure** : Implémentation de l'accès aux données
-- **Api** : Couche de présentation (contrôleurs REST)
+- **Domain** : Entités métier pures, sans dépendances externes (Game, Player, Enums)
+- **Application** : Logique métier, use cases, DTOs (Requests/Responses), Services avec gestion d'erreurs
+- **Infrastructure** : Implémentation de l'accès aux données (à venir)
+- **Api** : Couche de présentation (contrôleurs REST, à venir)
 
 **Dépendances** : Domain ← Application ← Infrastructure ← Api
+
+#### Sécurité et Validations
+
+Le backend implémente plusieurs niveaux de protection :
+
+**1. Validations Data Annotations**
+- Tous les DTOs Requests utilisent `[Required]`, `[Range]`, `[StringLength]`, `[RegularExpression]`
+- Protection contre les injections : noms limités à lettres, chiffres, espaces et tirets
+- Validation automatique par ASP.NET Core ModelState
+
+**2. Gestion d'erreurs Try-Catch**
+- Tous les services enveloppent leur logique dans des try-catch
+- Exceptions typées : `ArgumentNullException`, `ArgumentException`, `InvalidOperationException`
+- Messages d'erreur explicites pour faciliter le debugging
+
+**3. Sanitization**
+- `.Trim()` sur tous les inputs utilisateur
+- Validation stricte des enums avec `TryParse`
+- Vérification de null avant tout traitement
+
+**Exemple de validation dans CreateGameRequest :**
+```csharp
+[Required(ErrorMessage = "Le nom du joueur 1 est requis.")]
+[StringLength(50, MinimumLength = 1)]
+[RegularExpression(@"^[a-zA-Z0-9àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\s-]+$")]
+public required string Player1Name { get; set; }
+```
 
 ### Frontend — Atomic Design
 
@@ -179,9 +209,13 @@ Le frontend utilise la méthodologie **Atomic Design** :
 ## Notes Importantes
 
 - Structure du projet optimisée et simplifiée pour un jeu Tic-Tac-Toe
-- Aucune logique métier implémentée à ce stade (branche `feature/initial-setup`)
+- **Sécurité** : Validations Data Annotations + Try-Catch + Sanitization des inputs
+- **Architecture** : Clean Architecture (Domain, Application, Infrastructure, Api)
+- **Organisation** : DTOs séparés en Requests et Responses pour clarté
+- **Mapper dédié** : GameMapper pour conversion Entity ↔ DTO (réutilisable et testable)
+- Logique métier partielle : CreateGame implémenté avec gestion d'erreurs complète
 - Les dossiers `bin/`, `obj/` et `node_modules/` sont ignorés par Git
-- Projet prêt pour le développement des fonctionnalités
+- Projet prêt pour l'ajout des méthodes MakeMove, CheckWinner, etc.
 
 ---
 
