@@ -70,12 +70,38 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<TicTacToeDbContext>();
     try
     {
-        dbContext.Database.Migrate();
-        app.Logger.LogInformation("Migrations appliquées avec succès");
+        app.Logger.LogInformation("Vérification de la connexion à la base de données...");
+        var canConnect = await dbContext.Database.CanConnectAsync();
+        app.Logger.LogInformation($"Connexion possible : {canConnect}");
+        
+        app.Logger.LogInformation("Récupération des migrations en attente...");
+        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+        var appliedMigrations = await dbContext.Database.GetAppliedMigrationsAsync();
+        
+        app.Logger.LogInformation($"Migrations appliquées : {string.Join(", ", appliedMigrations)}");
+        app.Logger.LogInformation($"Migrations en attente : {string.Join(", ", pendingMigrations)}");
+        
+        if (pendingMigrations.Any())
+        {
+            app.Logger.LogInformation("Application des migrations...");
+            await dbContext.Database.MigrateAsync();
+            app.Logger.LogInformation("Migrations appliquées avec succès");
+        }
+        else
+        {
+            app.Logger.LogInformation("Aucune migration en attente. Base de données à jour.");
+        }
+        
+        // Vérifier que les tables existent
+        app.Logger.LogInformation("Vérification des tables...");
+        var gamesCount = await dbContext.Games.CountAsync();
+        var playersCount = await dbContext.Players.CountAsync();
+        app.Logger.LogInformation($"Tables vérifiées - Games: {gamesCount}, Players: {playersCount}");
     }
     catch (Exception ex)
     {
         app.Logger.LogError(ex, "Erreur lors de l'application des migrations");
+        throw; // Propager l'erreur pour empêcher le démarrage si la DB ne fonctionne pas
     }
 }
 
