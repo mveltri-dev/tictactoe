@@ -1,4 +1,10 @@
 using Application.Services;
+using Infrastructure.Database;
+using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
+
+// Charger les variables d'environnement depuis .env
+Env.Load("../../../.env");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,10 +13,20 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Ajouter les contrôleurs
 builder.Services.AddControllers();
 
-// 2. Enregistrer GameService en SINGLETON (une seule instance pour toute l'app)
-builder.Services.AddSingleton<GameService>();
+// 2. Configurer la base de données PostgreSQL (Supabase)
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("DATABASE_URL n'est pas définie dans le fichier .env");
+}
 
-// 3. Configurer CORS pour autoriser le frontend
+builder.Services.AddDbContext<TicTacToeDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// 3. Enregistrer GameService en SCOPED (une instance par requête HTTP)
+builder.Services.AddScoped<GameService>();
+
+// 4. Configurer CORS pour autoriser le frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -21,7 +37,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 4. Ajouter Swagger pour la documentation API
+// 5. Ajouter Swagger pour la documentation API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -30,7 +46,7 @@ var app = builder.Build();
 
 // ===== CONFIGURATION DU PIPELINE (après Build) =====
 
-// 5. Activer Swagger (pour le développement et les démos)
+// 5. Activer Swagger 
 app.UseSwagger();
 app.UseSwaggerUI();
 
