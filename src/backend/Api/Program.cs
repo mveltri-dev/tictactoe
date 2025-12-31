@@ -3,8 +3,13 @@ using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 
-// Charger les variables d'environnement depuis .env
-Env.Load("../../../.env");
+// Charger les variables d'environnement depuis .env UNIQUEMENT en développement local
+// En production Azure, les variables sont chargées automatiquement
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".env");
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
