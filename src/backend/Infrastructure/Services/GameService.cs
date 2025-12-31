@@ -6,7 +6,7 @@ using Application.Mappers;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Services;
+namespace Infrastructure.Services;
 
 /// <summary>
 /// Service gérant la logique métier des parties de Tic-Tac-Toe.
