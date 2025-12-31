@@ -18,12 +18,27 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Ajouter les contrôleurs
 builder.Services.AddControllers();
 
-// 2. Configurer la base de données PostgreSQL (Supabase)
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (string.IsNullOrEmpty(connectionString))
+// 2. Configurer la base de données PostgreSQL Azure
+// Construction de la chaîne de connexion selon le format Microsoft Azure
+var host = Environment.GetEnvironmentVariable("DB_HOST")
+                ?? Env.GetString("DB_HOST");
+var user = Environment.GetEnvironmentVariable("DB_USER") ?? Env.GetString("DB_USER");
+var database = Environment.GetEnvironmentVariable("DB_NAME") ?? Env.GetString("DB_NAME");
+var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? Env.GetString("DB_PASSWORD");
+var port = Environment.GetEnvironmentVariable("DB_PORT") ?? Env.GetString("DB_PORT") ?? "5432";
+
+if (string.IsNullOrEmpty(password))
 {
-    throw new InvalidOperationException("DATABASE_URL n'est pas définie dans le fichier .env");
+    throw new InvalidOperationException("DB_PASSWORD n'est pas définie");
 }
+
+var connectionString = string.Format(
+    "Server={0}; User Id={1}; Database={2}; Port={3}; Password={4}; SSL Mode=Require",
+    host,
+    user,
+    database,
+    port,
+    password);
 
 builder.Services.AddDbContext<TicTacToeDbContext>(options =>
     options.UseNpgsql(connectionString));
