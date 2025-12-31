@@ -44,6 +44,21 @@ builder.Services.AddSwaggerGen();
 // ===== BUILD DE L'APPLICATION =====
 var app = builder.Build();
 
+// ===== APPLIQUER LES MIGRATIONS AUTOMATIQUEMENT =====
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<TicTacToeDbContext>();
+    try
+    {
+        dbContext.Database.Migrate();
+        app.Logger.LogInformation("Migrations appliquées avec succès");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Erreur lors de l'application des migrations");
+    }
+}
+
 // ===== CONFIGURATION DU PIPELINE (après Build) =====
 
 // 5. Activer Swagger 
