@@ -33,7 +33,7 @@ public class GameController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(GameDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult CreateGame([FromBody] CreateGameRequest request)
+    public async Task<IActionResult> CreateGame([FromBody] CreateGameRequest request)
     {
         try
         {
@@ -44,7 +44,7 @@ public class GameController : ControllerBase
             }
 
             // Créer la partie via le service
-            GameDTO game = _gameService.CreateGame(request);
+            GameDTO game = await _gameService.CreateGame(request);
 
             // Retourner 200 OK avec le DTO
             return Ok(game);
@@ -73,12 +73,12 @@ public class GameController : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(GameDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetGame(Guid id)
+    public async Task<IActionResult> GetGame(Guid id)
     {
         try
         {
             // Récupérer la partie via le service
-            GameDTO game = _gameService.GetGame(id);
+            GameDTO game = await _gameService.GetGame(id);
 
             // Retourner 200 OK avec le DTO
             return Ok(game);
@@ -106,7 +106,7 @@ public class GameController : ControllerBase
     [ProducesResponseType(typeof(GameDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult MakeMove(Guid id, [FromBody] MakeMoveRequest request)
+    public async Task<IActionResult> MakeMove(Guid id, [FromBody] MakeMoveRequest request)
     {
         try
         {
@@ -123,7 +123,7 @@ public class GameController : ControllerBase
             }
 
             // Jouer le coup via le service
-            GameDTO game = _gameService.MakeMove(request);
+            GameDTO game = await _gameService.MakeMove(request);
 
             // Retourner 200 OK avec le DTO mis à jour
             return Ok(game);
