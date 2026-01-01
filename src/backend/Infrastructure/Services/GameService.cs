@@ -3,19 +3,22 @@ using Domain.Enums;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Mappers;
+using Infrastructure.Database;
+using Microsoft.EntityFrameworkCore;
 
-namespace Application.Services;
+namespace Infrastructure.Services;
 
 /// <summary>
 /// Service gérant la logique métier des parties de Tic-Tac-Toe.
 /// </summary>
 public class GameService
 {
-    // Stockage en mémoire des parties (sans base de données pour l'instant)
-    private readonly Dictionary<Guid, Game> _games = new();
-    
-    // Stockage en mémoire des joueurs
-    private readonly Dictionary<Guid, Player> _players = new();
+    private readonly TicTacToeDbContext _dbContext;
+
+    public GameService(TicTacToeDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
 
     /// <summary>
     /// Génère toutes les combinaisons gagnantes possibles pour un plateau width x height.
@@ -95,7 +98,7 @@ public class GameService
     /// <returns>La partie créée sous forme de DTO.</returns>
     /// <exception cref="ArgumentNullException">Si la requête est null.</exception>
     /// <exception cref="ArgumentException">Si les données de la requête sont invalides.</exception>
-    public GameDTO CreateGame(CreateGameRequest request)
+    public async Task<GameDTO> CreateGame(CreateGameRequest request)
     {
         try
         {
@@ -155,10 +158,11 @@ public class GameService
             // 5. Créer la partie - X commence
             Game game = new Game(playerX.Id, playerO.Id, gameMode);
 
-            // 6. Sauvegarder en mémoire
-            _players[player1.Id] = player1;
-            _players[player2.Id] = player2;
-            _games[game.Id] = game;
+            // 6. Sauvegarder dans la base de données
+            await _dbContext.Players.AddAsync(player1);
+            await _dbContext.Players.AddAsync(player2);
+            await _dbContext.Games.AddAsync(game);
+            await _dbContext.SaveChangesAsync();
 
             // 7. Convertir et retourner le DTO
             return GameMapper.ToDTO(game);
@@ -183,11 +187,13 @@ public class GameService
     /// <param name="gameId">Identifiant de la partie.</param>
     /// <returns>La partie sous forme de DTO.</returns>
     /// <exception cref="KeyNotFoundException">Si la partie n'existe pas.</exception>
-    public GameDTO GetGame(Guid gameId)
+    public async Task<GameDTO> GetGame(Guid gameId)
     {
         try
         {
-            if (!_games.TryGetValue(gameId, out Game? game))
+            var game = await _dbContext.Games.FindAsync(gameId);
+            
+            if (game == null)
             {
                 throw new KeyNotFoundException($"Partie introuvable avec l'ID : {gameId}");
             }
@@ -212,7 +218,7 @@ public class GameService
     /// <exception cref="ArgumentNullException">Si la requête est null.</exception>
     /// <exception cref="KeyNotFoundException">Si la partie ou le joueur n'existe pas.</exception>
     /// <exception cref="InvalidOperationException">Si le coup est invalide.</exception>
-    public GameDTO MakeMove(MakeMoveRequest request)
+    public async Task<GameDTO> MakeMove(MakeMoveRequest request)
     {
         try
         {
@@ -223,13 +229,15 @@ public class GameService
             }
 
             // 2. Récupérer la partie
-            if (!_games.TryGetValue(request.GameId, out Game? game))
+            var game = await _dbContext.Games.FindAsync(request.GameId);
+            if (game == null)
             {
                 throw new KeyNotFoundException($"Partie introuvable avec l'ID : {request.GameId}");
             }
 
             // 3. Récupérer le joueur
-            if (!_players.TryGetValue(request.PlayerId, out Player? player))
+            var player = await _dbContext.Players.FindAsync(request.PlayerId);
+            if (player == null)
             {
                 throw new KeyNotFoundException($"Joueur introuvable avec l'ID : {request.PlayerId}");
             }
@@ -282,11 +290,16 @@ public class GameService
             if (game.Status == GameStatus.InProgress)
             {
                 Guid nextPlayerId = game.CurrentTurn == PlayerSymbol.X ? game.PlayerXId : game.PlayerOId;
-                if (_players.TryGetValue(nextPlayerId, out Player? nextPlayer) && nextPlayer.Type == PlayerType.Computer)
+                var nextPlayer = await _dbContext.Players.FindAsync(nextPlayerId);
+                if (nextPlayer != null && nextPlayer.Type == PlayerType.Computer)
                 {
-                    PlayComputerMove(game, nextPlayer);
+                    await PlayComputerMove(game, nextPlayer);
                 }
             }
+
+            // 12. Sauvegarder les modifications
+            _dbContext.Games.Update(game);
+            await _dbContext.SaveChangesAsync();
 
             return GameMapper.ToDTO(game);
         }
@@ -361,7 +374,7 @@ public class GameService
     /// </summary>
     /// <param name="game">La partie en cours.</param>
     /// <param name="computerPlayer">Le joueur ordinateur.</param>
-    private void PlayComputerMove(Game game, Player computerPlayer)
+    private async Task PlayComputerMove(Game game, Player computerPlayer)
     {
         // 1. Trouver toutes les positions libres
         List<int> emptyPositions = new();
