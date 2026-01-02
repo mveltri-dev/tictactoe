@@ -1,0 +1,96 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: hsl(var(--card));
+  border: 3px solid hsl(var(--border));
+  min-width: 140px;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 1px 3px hsl(var(--shadow-color) / 0.1);
+}
+
+.card--x {
+  border-color: hsl(var(--game-x));
+}
+
+.card--o {
+  border-color: hsl(var(--game-o));
+}
+
+.card--active {
+  border-width: 3px;
+  box-shadow: 0 4px 12px hsl(var(--shadow-color) / 0.15), 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+.card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card__info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card__symbol {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.card__symbol--x {
+  color: hsl(var(--game-x));
+  background: hsl(var(--game-x) / 0.1);
+}
+
+.card__symbol--o {
+  color: hsl(var(--game-o));
+  background: hsl(var(--game-o) / 0.1);
+}
+
+.card__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.card__score {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  text-align: center;
+}
+
+.card__badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .card {
+    min-width: 100px;
+    padding: 1rem;
+  }
+
+  .card__symbol {
+    font-size: 1.5rem;
+  }
+}

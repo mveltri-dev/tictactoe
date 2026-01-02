@@ -10,6 +10,7 @@ export interface GameDTO {
   currentTurn: Symbol
   status: GameStatus
   winnerId: string | null
+  winningLine: number[] | null
   createdAt: string
   mode: string
 }

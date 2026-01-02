@@ -1,0 +1,27 @@
+.status {
+  text-align: center;
+  padding: 1rem;
+  background-color: hsl(var(--card));
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.05);
+}
+
+.status__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.5rem;
+}
+
+.status__turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.status__turn-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
