@@ -1,0 +1,1 @@
+export { GameConfiguration } from "./GameConfiguration"
