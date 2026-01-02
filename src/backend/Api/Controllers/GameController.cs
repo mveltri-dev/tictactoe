@@ -149,4 +149,27 @@ public class GameController : ControllerBase
             return StatusCode(500, new { error = $"Erreur serveur : {ex.Message}" });
         }
     }
+
+    /// <summary>
+    /// Joue automatiquement le coup de l'IA si c'est son tour.
+    /// </summary>
+    [HttpPost("{id}/ai-move")]
+    [ProducesResponseType(typeof(GameDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PlayAiMove(Guid id)
+    {
+        try
+        {
+            GameDTO game = await _gameService.PlayAiMoveIfNeeded(id);
+            return Ok(game);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Erreur serveur : {ex.Message}" });
+        }
+    }
 }
