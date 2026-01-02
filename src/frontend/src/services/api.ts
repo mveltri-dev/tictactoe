@@ -1,11 +1,14 @@
 import type { CreateGameRequest, MakeMoveRequest, GameDTO } from "../dtos"
 
-// Utilise la variable d'environnement configurée dans .env.local ou .env.production
-const BASE_URL = import.meta.env.VITE_API_URL
+// Privilégier l'URL locale en développement
+const BASE_URL = import.meta.env.VITE_API_LOCAL_URL || import.meta.env.VITE_API_AZURE_URL
 
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const url = `${BASE_URL}${endpoint}`
+    console.log('API Request:', url, options?.method || 'GET')
+    
+    const response = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -15,6 +18,7 @@ class ApiService {
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('API Error:', response.status, errorText)
       throw new Error(`Erreur API ${response.status}: ${errorText || response.statusText}`)
     }
 
@@ -36,6 +40,12 @@ class ApiService {
     return this.request<GameDTO>(`/api/game/${request.gameId}/moves`, {
       method: "POST",
       body: JSON.stringify(request),
+    })
+  }
+
+  async playAiMove(gameId: string): Promise<GameDTO> {
+    return this.request<GameDTO>(`/api/game/${gameId}/ai-move`, {
+      method: "POST",
     })
   }
 }
