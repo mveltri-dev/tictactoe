@@ -54,6 +54,11 @@ public class Game
     public Guid? WinnerId { get; set; }
 
     /// <summary>
+    /// Positions des cases formant la ligne gagnante (3 positions), ou null si pas de gagnant.
+    /// </summary>
+    public int[]? WinningLine { get; set; }
+
+    /// <summary>
     /// Date et heure de création de la partie.
     /// </summary>
     public DateTime CreatedAt { get; private set; }
@@ -92,6 +97,7 @@ public class Game
         CurrentTurn = PlayerSymbol.X; // X commence
         Status = GameStatus.InProgress;
         WinnerId = null;
+        WinningLine = null;
         CreatedAt = DateTime.UtcNow;
         Mode = mode;
     }

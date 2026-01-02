@@ -1,11 +1,14 @@
 using Infrastructure.Services;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using DotNetEnv;
 
 // Charger les variables d'environnement depuis .env UNIQUEMENT en développement local
 // En production Azure, les variables sont chargées automatiquement
-var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".env");
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
 if (File.Exists(envPath))
 {
     Env.Load(envPath);
@@ -43,10 +46,43 @@ var connectionString = string.Format(
 builder.Services.AddDbContext<TicTacToeDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// 3. Enregistrer GameService en SCOPED (une instance par requête HTTP)
+// 3. Enregistrer les services
 builder.Services.AddScoped<GameService>();
+builder.Services.AddScoped<AuthService>();
 
-// 4. Configurer CORS pour autoriser le frontend
+// 4. Configurer l'authentification JWT
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
+                ?? Env.GetString("JWT_SECRET") 
+                ?? throw new InvalidOperationException("JWT_SECRET n'est pas définie");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? Env.GetString("JWT_ISSUER") ?? "TicTacToeApi";
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? Env.GetString("JWT_AUDIENCE") ?? "TicTacToeClient";
+
+builder.Configuration["Jwt:Secret"] = jwtSecret;
+builder.Configuration["Jwt:Issuer"] = jwtIssuer;
+builder.Configuration["Jwt:Audience"] = jwtAudience;
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// 5. Configurer CORS pour autoriser le frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -57,7 +93,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 5. Ajouter Swagger pour la documentation API
+// 6. Ajouter Swagger pour la documentation API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -96,7 +132,8 @@ using (var scope = app.Services.CreateScope())
         app.Logger.LogInformation("Vérification des tables...");
         var gamesCount = await dbContext.Games.CountAsync();
         var playersCount = await dbContext.Players.CountAsync();
-        app.Logger.LogInformation($"Tables vérifiées - Games: {gamesCount}, Players: {playersCount}");
+        var usersCount = await dbContext.Users.CountAsync();
+        app.Logger.LogInformation($"Tables vérifiées - Games: {gamesCount}, Players: {playersCount}, Users: {usersCount}");
     }
     catch (Exception ex)
     {
@@ -106,6 +143,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ===== CONFIGURATION DU PIPELINE (après Build) =====
+
+// Activer l'authentification et l'autorisation
+app.UseAuthentication();
+app.UseAuthorization();
 
 // 5. Activer Swagger 
 app.UseSwagger();

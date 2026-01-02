@@ -43,6 +43,11 @@ public class GameDTO
     public Guid? WinnerId { get; set; }
 
     /// <summary>
+    /// Positions des cases formant la ligne gagnante (index 0-8), ou null si pas de gagnant.
+    /// </summary>
+    public int[]? WinningLine { get; set; }
+
+    /// <summary>
     /// Date et heure de création de la partie.
     /// </summary>
     public DateTime CreatedAt { get; set; }
