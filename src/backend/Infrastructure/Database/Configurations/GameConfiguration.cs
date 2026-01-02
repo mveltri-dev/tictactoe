@@ -44,5 +44,16 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
 
         builder.Property(g => g.CreatedAt)
             .IsRequired();
+
+        // Relations avec User
+        builder.HasOne(g => g.PlayerX)
+            .WithMany()
+            .HasForeignKey(g => g.PlayerXId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(g => g.PlayerO)
+            .WithMany()
+            .HasForeignKey(g => g.PlayerOId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

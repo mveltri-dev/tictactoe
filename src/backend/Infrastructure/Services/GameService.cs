@@ -617,4 +617,71 @@ public class GameService
             game.CurrentTurn = game.CurrentTurn == PlayerSymbol.X ? PlayerSymbol.O : PlayerSymbol.X;
         }
     }
+
+    /// <summary>
+    /// Récupère l'historique des parties d'un utilisateur.
+    /// </summary>
+    public async Task<List<GameHistoryDTO>> GetUserGameHistory(Guid userId, int limit = 20)
+    {
+        var games = await _dbContext.Games
+            .Include(g => g.PlayerX)
+            .Include(g => g.PlayerO)
+            .Where(g => g.PlayerXId == userId || g.PlayerOId == userId)
+            .OrderByDescending(g => g.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
+        return games.Select(g =>
+        {
+            var isPlayerX = g.PlayerXId == userId;
+            var opponent = isPlayerX ? g.PlayerO : g.PlayerX;
+
+            return new GameHistoryDTO
+            {
+                Id = g.Id,
+                Mode = g.Mode.ToString(),
+                Status = g.Status.ToString(),
+                IsWinner = g.WinnerId == userId,
+                PlayerSymbol = isPlayerX ? "X" : "O",
+                OpponentName = opponent?.Username,
+                CreatedAt = g.CreatedAt
+            };
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Récupère les statistiques d'un utilisateur.
+    /// </summary>
+    public async Task<UserStatsDTO> GetUserStats(Guid userId)
+    {
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Utilisateur non trouvé");
+        }
+
+        var games = await _dbContext.Games
+            .Where(g => g.PlayerXId == userId || g.PlayerOId == userId)
+            .Where(g => g.Status != GameStatus.InProgress)
+            .ToListAsync();
+
+        var totalGames = games.Count;
+        var wins = games.Count(g => g.WinnerId == userId);
+        var losses = games.Count(g => g.WinnerId != null && g.WinnerId != userId);
+        var draws = games.Count(g => g.Status == GameStatus.Draw);
+        var winRate = totalGames > 0 ? (double)wins / totalGames : 0.0;
+        var lastGameAt = games.Any() ? games.Max(g => g.CreatedAt) : (DateTime?)null;
+
+        return new UserStatsDTO
+        {
+            UserId = userId,
+            Username = user.Username,
+            TotalGames = totalGames,
+            Wins = wins,
+            Losses = losses,
+            Draws = draws,
+            WinRate = winRate,
+            LastGameAt = lastGameAt
+        };
+    }
 }

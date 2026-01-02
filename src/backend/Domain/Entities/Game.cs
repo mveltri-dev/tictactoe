@@ -69,6 +69,16 @@ public class Game
     public GameMode Mode { get; private set; }
 
     /// <summary>
+    /// Navigation property vers l'utilisateur X.
+    /// </summary>
+    public User? PlayerX { get; private set; }
+
+    /// <summary>
+    /// Navigation property vers l'utilisateur O.
+    /// </summary>
+    public User? PlayerO { get; private set; }
+
+    /// <summary>
     /// Constructeur pour créer une nouvelle partie.
     /// </summary>
     /// <param name="playerXId">Identifiant du joueur X.</param>
