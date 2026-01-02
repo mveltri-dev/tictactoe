@@ -88,6 +88,14 @@ export function GamePlaying({
   const scorePlayer1Label = config.gameMode === "VsComputer" ? "Vous" : playerXName
   const scorePlayer2Label = config.gameMode === "VsComputer" ? "EasiBot" : playerOName
 
+  // Scores corrects selon qui a quel symbole
+  const player1Score = config.gameMode === "VsComputer" 
+    ? (config.chosenSymbol === "X" ? scores.X : scores.O)
+    : scores.X
+  const player2Score = config.gameMode === "VsComputer"
+    ? (config.chosenSymbol === "X" ? scores.O : scores.X)
+    : scores.O
+
   return (
     <div className={styles.container}>
       {/* Scores avec ScoreBadges */}
@@ -99,13 +107,13 @@ export function GamePlaying({
       >
         <ScoreBadge 
           label={scorePlayer1Label} 
-          value={scores.X} 
+          value={player1Score} 
           variant="x" 
         />
         <ScoreBadge label="Nuls" value={scores.draws} variant="draw" />
         <ScoreBadge 
           label={scorePlayer2Label} 
-          value={scores.O} 
+          value={player2Score} 
           variant="o" 
         />
       </motion.div>
