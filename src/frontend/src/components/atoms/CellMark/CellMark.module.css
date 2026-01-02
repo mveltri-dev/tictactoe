@@ -1,0 +1,13 @@
+.cell-mark {
+  width: 100%;
+  height: 100%;
+  padding: 0.5rem;
+}
+
+.cell-mark--x {
+  color: hsl(var(--game-x));
+}
+
+.cell-mark--o {
+  color: hsl(var(--game-o));
+}

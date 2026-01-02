@@ -1,0 +1,41 @@
+/* ScoreBadge - Atom */
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid;
+  backdrop-filter: blur(4px);
+  transition: transform 0.2s ease;
+}
+
+.badge--x {
+  background-color: hsl(var(--game-x) / 0.1);
+  color: hsl(var(--game-x));
+  border-color: hsl(var(--game-x) / 0.2);
+}
+
+.badge--o {
+  background-color: hsl(var(--game-o) / 0.1);
+  color: hsl(var(--game-o));
+  border-color: hsl(var(--game-o) / 0.2);
+}
+
+.badge--draw {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border));
+}
+
+.badge__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.badge__value {
+  font-size: 1.875rem;
+  font-weight: 700;
+}
