@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Infrastructure.Services;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
+using System.Security.Claims;
 
 namespace Api.Controllers;
 
@@ -166,6 +168,67 @@ public class GameController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Erreur serveur : {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Récupère l'historique des parties de l'utilisateur connecté.
+    /// </summary>
+    /// <param name="limit">Nombre maximum de parties à retourner (défaut: 20).</param>
+    /// <returns>Liste des parties jouées par l'utilisateur.</returns>
+    /// <response code="200">Historique récupéré avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    [HttpGet("history")]
+    [Authorize]
+    [ProducesResponseType(typeof(List<GameHistoryDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetUserHistory([FromQuery] int limit = 20)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                ?? throw new UnauthorizedAccessException("User ID non trouvé"));
+
+            var history = await _gameService.GetUserGameHistory(userId, limit);
+            return Ok(history);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Erreur serveur : {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Récupère les statistiques de l'utilisateur connecté.
+    /// </summary>
+    /// <returns>Statistiques de l'utilisateur.</returns>
+    /// <response code="200">Statistiques récupérées avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    [HttpGet("stats")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserStatsDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetUserStats()
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                ?? throw new UnauthorizedAccessException("User ID non trouvé"));
+
+            var stats = await _gameService.GetUserStats(userId);
+            return Ok(stats);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
         }
         catch (Exception ex)
         {
