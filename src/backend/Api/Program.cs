@@ -49,6 +49,7 @@ builder.Services.AddDbContext<TicTacToeDbContext>(options =>
 // 3. Enregistrer les services
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<RoomService>();
 
 // 4. Configurer l'authentification JWT
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
