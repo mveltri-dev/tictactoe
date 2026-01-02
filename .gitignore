@@ -1,34 +1,43 @@
-# .gitignore - minimal
+# Environment variables (NEVER commit)
+.env
+.env.local
+.env.*.local
+.env.production
+**/.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# .NET
 bin/
 obj/
 **/bin/
 **/obj/
-node_modules/
-dist/
-.env
-.DS_Store
-.vscode/
-/*.user
-# Visual Studio / .NET
-bin/
-obj/
 *.user
 *.suo
-*.vs/
-
-# Node
-node_modules/
-dist/
-build/
+.vs/
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Editor
-.vscode/
-.idea/
-
-# Environment
-.env
