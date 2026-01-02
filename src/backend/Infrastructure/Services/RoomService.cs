@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Enums;
 using Application.DTOs.Responses;
+using Application.Interfaces;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,11 +14,16 @@ public class RoomService
 {
     private readonly TicTacToeDbContext _dbContext;
     private readonly GameService _gameService;
+    private readonly IGameNotificationService? _notificationService;
 
-    public RoomService(TicTacToeDbContext dbContext, GameService gameService)
+    public RoomService(
+        TicTacToeDbContext dbContext, 
+        GameService gameService,
+        IGameNotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _gameService = gameService;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -117,7 +123,18 @@ public class RoomService
             .Include(r => r.Guest)
             .FirstAsync(r => r.Id == room.Id);
 
-        return ToDTO(updatedRoom);
+        var roomDto = ToDTO(updatedRoom);
+
+        // Notifier via SignalR
+        if (_notificationService != null && guest != null)
+        {
+            await _notificationService.NotifyPlayerJoinedRoom(
+                room.Code, 
+                guest.Username, 
+                PlayerSymbol.O.ToString());
+        }
+
+        return roomDto;
     }
 
     /// <summary>
@@ -166,7 +183,15 @@ public class RoomService
             .Include(r => r.Game)
             .FirstAsync(r => r.Id == room.Id);
 
-        return ToDTO(updatedRoom);
+        var roomDto = ToDTO(updatedRoom);
+
+        // Notifier via SignalR
+        if (_notificationService != null)
+        {
+            await _notificationService.NotifyGameStarted(room.Code, game.Id.ToString());
+        }
+
+        return roomDto;
     }
 
     /// <summary>
@@ -188,6 +213,12 @@ public class RoomService
 
         room.Close();
         await _dbContext.SaveChangesAsync();
+
+        // Notifier via SignalR
+        if (_notificationService != null)
+        {
+            await _notificationService.NotifyRoomClosed(room.Code, "Host closed the room");
+        }
     }
 
     /// <summary>

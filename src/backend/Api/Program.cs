@@ -1,5 +1,7 @@
 using Infrastructure.Services;
 using Infrastructure.Database;
+using Application.Interfaces;
+using Application.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -50,6 +52,7 @@ builder.Services.AddDbContext<TicTacToeDbContext>(options =>
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<RoomService>();
+builder.Services.AddScoped<IGameNotificationService, SignalRNotificationService>();
 
 // 4. Configurer l'authentification JWT
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
@@ -90,13 +93,17 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:5173") // Vite dev server
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials(); // Nécessaire pour SignalR
     });
 });
 
 // 6. Ajouter Swagger pour la documentation API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// 7. Configurer SignalR
+builder.Services.AddSignalR();
 
 // ===== BUILD DE L'APPLICATION =====
 var app = builder.Build();
@@ -159,7 +166,10 @@ app.UseCors("AllowFrontend");
 // 7. Mapper les contrôleurs
 app.MapControllers();
 
-// 8. Route de test (optionnelle)
+// 8. Mapper le hub SignalR
+app.MapHub<GameHub>("/gamehub");
+
+// 9. Route de test (optionnelle)
 app.MapGet("/", () => Results.Ok(new { message = "TicTacToe API is running" }));
 
 app.Run();
