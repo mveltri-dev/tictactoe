@@ -16,10 +16,10 @@
 
 **Pourquoi ces choix ?**
 
-✅ **Vite vs Create React App** : Build 10x plus rapide, ESM natif
-✅ **TypeScript** : Détection d'erreurs à la compilation, autocomplétion
-✅ **Framer Motion** : Animations déclaratives, spring physics naturelles
-✅ **CSS Modules** : Isolation des styles, pas de conflits de noms
+ **Vite vs Create React App** : Build 10x plus rapide, ESM natif
+ **TypeScript** : Détection d'erreurs à la compilation, autocomplétion
+ **Framer Motion** : Animations déclaratives, spring physics naturelles
+ **CSS Modules** : Isolation des styles, pas de conflits de noms
 
 ---
 
@@ -38,10 +38,10 @@ pages/          → Pages complètes avec données
 
 **Avantages** :
 
-✅ **Réutilisabilité maximale** : Atoms utilisés partout
-✅ **Maintenabilité** : Changement atom = propagation automatique
-✅ **Testabilité** : Chaque niveau testable isolément
-✅ **Scalabilité** : Ajout de features sans refactoring
+ **Réutilisabilité maximale** : Atoms utilisés partout
+ **Maintenabilité** : Changement atom = propagation automatique
+ **Testabilité** : Chaque niveau testable isolément
+ **Scalabilité** : Ajout de features sans refactoring
 
 ---
 
@@ -202,17 +202,17 @@ pages/          → Pages complètes avec données
 **Décision technique** : Supprimer Tailwind CSS
 
 **Pourquoi ?**
-- ❌ Tailwind = 54 packages supplémentaires
-- ❌ Build time plus long
-- ❌ Classes utilitaires illisibles (className="flex flex-col items-center...")
-- ❌ Pas de vraie isolation des styles
+-  Tailwind = 54 packages supplémentaires
+-  Build time plus long
+-  Classes utilitaires illisibles (className="flex flex-col items-center...")
+-  Pas de vraie isolation des styles
 
 **Solution adoptée : CSS Modules**
-- ✅ Fichier .module.css par composant
-- ✅ Isolation automatique (hash des noms)
-- ✅ CSS pur, performances optimales
-- ✅ Pas de dépendances externes
-- ✅ Bundle -25 KB JS, -6 KB CSS
+-  Fichier .module.css par composant
+-  Isolation automatique (hash des noms)
+-  CSS pur, performances optimales
+-  Pas de dépendances externes
+-  Bundle -25 KB JS, -6 KB CSS
 
 **Système de variables CSS** :
 ```css
@@ -509,30 +509,30 @@ ComponentName/
 
 **Fonctionnalités à implémenter** :
 
-🎯 **Multijoueur en ligne** (branche feature/online-multiplayer)
+ **Multijoueur en ligne** (branche feature/online-multiplayer)
 - WebSockets pour temps réel
 - Système de rooms/lobby
 - Matching de joueurs
 - Chat en jeu
 
-🎯 **Authentification**
+ **Authentification**
 - Système de comptes utilisateurs
 - Historique des parties
 - Classement ELO
 - Statistiques personnelles
 
-🎯 **Progressive Web App**
+ **Progressive Web App**
 - Service Worker
 - Cache offline
 - Installable sur mobile
 - Notifications push
 
-🎯 **Internationalisation**
+ **Internationalisation**
 - Support multi-langues
 - Français, Anglais, Espagnol
 - Format dates/heures localisé
 
-🎯 **Tests**
+ **Tests**
 - Unit tests (Vitest)
 - Component tests (Testing Library)
 - E2E tests (Playwright)
@@ -540,7 +540,7 @@ ComponentName/
 
 ---
 
-## Récapitulatif Frontend 📊
+## Récapitulatif Frontend 
 
 **Architecture** : Atomic Design + CSS Modules
 **Stack** : React 18 + TypeScript + Vite
@@ -565,4 +565,4 @@ ComponentName/
 
 ---
 
-## Prochaine étape : Multijoueur en ligne 🌐
+## Prochaine étape : Multijoueur en ligne 
