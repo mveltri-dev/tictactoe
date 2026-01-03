@@ -126,7 +126,7 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
 
   const createGame = useCallback(async (request: CreateGameRequest): Promise<GameDTO | null> => {
     try {
-      setAppState("loading")
+      // Ne pas passer par 'loading' pour les parties locales afin d'éviter le flash
       setError(null)
       // Pour les parties locales, garder la config locale (noms, symbole)
       // Toujours initialiser la config locale (pour toutes les parties)
@@ -137,7 +137,7 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
         gameMode: request.gameMode
       }
       setConfig(newConfig)
-      if (request.gameMode !== "VsPlayerOnline") {
+      if (request.gameMode === "VsPlayerOnline") {
         setError(null)
         setAppState("loading")
       }
@@ -145,6 +145,22 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
       setGame(newGame)
       previousGameStatusRef.current = "InProgress"
       setAppState("playing")
+
+      // Si c'est une partie contre l'IA et que le joueur humain a choisi O, l'IA doit jouer en premier
+      if (
+        request.gameMode === "VsComputer" &&
+        request.chosenSymbol === "O" &&
+        newGame.currentTurn === "X"
+      ) {
+        // L'IA doit jouer tout de suite
+        await new Promise(resolve => setTimeout(resolve, 1200))
+        const gameAfterAi = await api.playAiMove(newGame.id)
+        setGame(gameAfterAi)
+        if (gameAfterAi.status !== "InProgress") {
+          setAppState("finished")
+        }
+      }
+
       return newGame
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la partie")
@@ -232,20 +248,20 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
       // 2. Afficher immédiatement le coup du joueur
       setGame(updatedGame)
       setAppState("playing")
-      // 3. Si la partie continue et c'est le mode IA, attendre puis faire jouer l'IA
-      if (updatedGame.status === "InProgress" && config.gameMode === "VsComputer") {
+      // 3. Tant que c'est à l'IA de jouer, enchaîner les coups IA (utile si l'IA doit jouer plusieurs fois de suite)
+      let nextGame = updatedGame;
+      while (
+        nextGame.status === "InProgress" &&
+        config.gameMode === "VsComputer" &&
+        config.chosenSymbol !== nextGame.currentTurn
+      ) {
         console.log('IA va jouer dans 1200ms...')
-        // Attendre 1200ms pour que l'utilisateur voie son coup
         await new Promise(resolve => setTimeout(resolve, 1200))
-        console.log('IA joue maintenant, gameId:', updatedGame.id)
-        // Déclencher le coup de l'IA
-        const gameAfterAi = await api.playAiMove(updatedGame.id)
-        setGame(gameAfterAi)
-        // Vérifier si la partie est terminée après le coup de l'IA
-        if (gameAfterAi.status !== "InProgress") {
-          setAppState("finished")
-        }
-      } else if (updatedGame.status !== "InProgress") {
+        console.log('IA joue maintenant, gameId:', nextGame.id)
+        nextGame = await api.playAiMove(nextGame.id)
+        setGame(nextGame)
+      }
+      if (nextGame.status !== "InProgress") {
         setAppState("finished")
       }
     } catch (err) {

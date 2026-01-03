@@ -522,12 +522,14 @@ public class GameService
             // Si la partie est locale (VsComputer) et c'est au tour de l'IA, jouer automatiquement
             if (!RequiresDatabasePersistence(game.Mode))
             {
-                // Récupérer le joueur IA (toujours O dans ce mode)
-                PlayerSymbol aiSymbol = game.PlayerOId != null && game.PlayerOId != Guid.Empty ? PlayerSymbol.O : PlayerSymbol.X;
+                // Trouver le joueur IA (PlayerType.Computer) parmi les deux joueurs
                 Player? aiPlayer = null;
                 lock (_cacheLock)
                 {
-                    _inMemoryPlayers.TryGetValue(game.PlayerOId, out aiPlayer);
+                    if (_inMemoryPlayers.TryGetValue(game.PlayerXId, out var px) && px.Type == PlayerType.Computer)
+                        aiPlayer = px;
+                    else if (_inMemoryPlayers.TryGetValue(game.PlayerOId, out var po) && po.Type == PlayerType.Computer)
+                        aiPlayer = po;
                 }
                 if (aiPlayer != null && game.CurrentTurn == aiPlayer.Symbol && game.Status == GameStatus.InProgress)
                 {
