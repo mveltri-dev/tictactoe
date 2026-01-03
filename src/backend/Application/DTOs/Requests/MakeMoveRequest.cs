@@ -20,10 +20,8 @@ public class MakeMoveRequest
     public Guid PlayerId { get; set; }
 
     /// <summary>
-    /// Position sur le plateau (0-8).
-    /// Index: [0][1][2] / [3][4][5] / [6][7][8]
+    /// Position sur le plateau .
     /// </summary>
     [Required(ErrorMessage = "La position est requise.")]
-    [Range(0, 8, ErrorMessage = "La position doit être entre 0 et 8.")]
     public int Position { get; set; }
 }

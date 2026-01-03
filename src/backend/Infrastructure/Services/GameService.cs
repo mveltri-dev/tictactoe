@@ -78,7 +78,7 @@ public class GameService
     private List<int[]> GenerateWinningCombinations(int width, int height)
     {
         List<int[]> combinations = new();
-        int winLength = Math.Min(width, height); // Longueur à aligner pour gagner
+        int winLength = 3; // Longueur à aligner pour gagner (toujours 3)
 
         // 1. Lignes horizontales (toutes les séquences de winLength dans chaque ligne)
         for (int row = 0; row < height; row++)
@@ -148,6 +148,7 @@ public class GameService
     /// <exception cref="ArgumentException">Si les données de la requête sont invalides.</exception>
     public async Task<GameDTO> CreateGame(CreateGameRequest request)
     {
+        Console.WriteLine($"[CreateGame] width={request.Width}, height={request.Height}");
         try
         {
             // Validation de la requête
@@ -218,8 +219,10 @@ public class GameService
                 playerO = player1;
             }
 
-            // 5. Créer la partie - X commence
-            Game game = new Game(playerX.Id, playerO.Id, gameMode);
+            // 5. Créer la partie - X commence (dimensions dynamiques)
+            int width = request.Width >= 3 ? request.Width : 3;
+            int height = request.Height >= 3 ? request.Height : 3;
+            Game game = new Game(playerX.Id, playerO.Id, gameMode, width, height);
 
             // 6. Enregistrer selon le mode : mémoire (local) ou DB (online)
             if (RequiresDatabasePersistence(gameMode))
