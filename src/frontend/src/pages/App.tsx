@@ -3,8 +3,9 @@ import { Routes, Route, useNavigate, useLocation } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
 import { useGame } from "../hooks"
 import { GameLayout } from "../components/templates"
-import { GameConfiguration, GamePlaying, GameModeSelector } from "../components/organisms"
+import { GameConfiguration, GamePlaying, GameModeSelector, OnlineHub } from "../components/organisms"
 import { LoginForm } from "../components/molecules"
+import { authService } from "../services/authService"
 import type { CreateGameRequest, GameModeAPI } from "../dtos"
 import styles from "./App.module.css"
 
@@ -39,6 +40,7 @@ export function App() {
     error,
     scores,
     createGame,
+    loadGame,
     makeMove,
     resetGame,
     changeGameMode
@@ -47,12 +49,22 @@ export function App() {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true)
   const [language, setLanguage] = useState("fr")
   const [gameMode, setGameMode] = useState<GameModeAPI>("VsComputer")
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [showLoginForm, setShowLoginForm] = useState(false)
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
 
-  // Auto-créer une partie par défaut lors du premier chargement ou refresh
+  // Charger une partie existante si on accède à /game/:id
   useEffect(() => {
-    // Si on est sur /game/:id mais qu'il n'y a pas de partie, rediriger vers la configuration
+    const match = location.pathname.match(/^\/game\/([^/]+)$/)
+    if (match) {
+      const gameId = match[1]
+      // Ne charger que si on n'a pas déjà cette partie
+      if (!game || game.id !== gameId) {
+        loadGame(gameId)
+      }
+    }
+  }, [location.pathname, game, loadGame])
+
+  // Si on est sur /game/:id mais qu'il n'y a pas de partie, rediriger vers la configuration
+  useEffect(() => {
     if (location.pathname.startsWith('/game/') && !game && appState === "configuration") {
       navigate('/')
     }
@@ -62,10 +74,52 @@ export function App() {
   const handleGameModeChange = async (mode: GameMode) => {
     const apiMode = mapLocalToApiMode(mode)
     setGameMode(apiMode)
+    
+    // Si mode online, gérer l'authentification
+    if (apiMode === "VsPlayerOnline") {
+      if (!token) {
+        // Pas de token, rediriger vers login SANS changer le mode dans useGame
+        console.log('Redirection vers /login car pas de token')
+        navigate('/login')
+        return // Sortir immédiatement
+      } else {
+        // Token présent, aller au lobby
+        console.log('Redirection vers /lobby car token présent')
+        navigate('/lobby')
+        return // Sortir immédiatement
+      }
+    }
+    
+    // Pour les modes local et bot : changer le mode dans useGame
     changeGameMode(apiMode)
     
-    // Rediriger vers la page de configuration pour tous les modes
+    // Rester sur la page de configuration
+    if (location.pathname !== '/') {
+      navigate('/')
+    }
+  }
+
+  const handleLoginSubmit = async (username: string, password: string) => {
+    const response = await authService.login(username, password)
+    setToken(response.token)
+    navigate('/lobby')
+  }
+
+  const handleLogin = (userToken: string) => {
+    setToken(userToken)
+    localStorage.setItem('token', userToken)
+    navigate('/lobby')
+  }
+
+  const handleLogout = () => {
+    authService.logout()
+    setToken(null)
     navigate('/')
+  }
+
+  const handleGameFound = (gameId: string, opponentUsername: string, yourSymbol: "X" | "O") => {
+    console.log('Match trouvé !', { gameId, opponentUsername, yourSymbol })
+    navigate(`/game/${gameId}`)
   }
 
   const handleStartGameAuto = async (mode: GameModeAPI, symbol: "X" | "O") => {
@@ -116,11 +170,6 @@ export function App() {
     }
   }
 
-  const handleLogin = () => {
-    setIsLoggedIn(true)
-    setShowLoginForm(false)
-  }
-
   const isInGame = !!game
 
   return (
@@ -135,20 +184,8 @@ export function App() {
         <GameModeSelector
           currentMode={mapApiToLocalMode(gameMode)}
           onSelectMode={handleGameModeChange}
-          isLoggedIn={isLoggedIn}
-          onLoginClick={() => setShowLoginForm(true)}
         />
       </div>
-
-      {/* Login Form Modal */}
-      <AnimatePresence>
-        {showLoginForm && (
-          <LoginForm
-            onClose={() => setShowLoginForm(false)}
-            onLogin={handleLogin}
-          />
-        )}
-      </AnimatePresence>
 
       <Routes>
         {/* Page d'accueil - Configuration */}
@@ -185,9 +222,43 @@ export function App() {
           </>
         } />
 
+        {/* Page de login (uniquement pour le mode online) */}
+        <Route path="/login" element={
+          <div className={styles.content_container}>
+            <LoginForm onLogin={handleLoginSubmit} onClose={() => navigate('/')} />
+          </div>
+        } />
+
+        {/* Page de lobby (nécessite authentification) */}
+        <Route path="/lobby" element={
+          token ? (
+            <div className={styles.content_container}>
+              <OnlineHub 
+                onLogout={handleLogout}
+                onStartMatchmaking={() => console.log('Matchmaking')}
+                onGameFound={handleGameFound}
+              />
+            </div>
+          ) : (
+            <div className={styles.content_container}>
+              <p>Vous devez être connecté pour accéder au lobby.</p>
+              <button onClick={() => navigate('/login')} className={styles.button}>
+                Se connecter
+              </button>
+            </div>
+          )
+        } />
+
         {/* Page de jeu */}
         <Route path="/game/:id" element={
           <>
+            {appState === "loading" && !game && (
+              <div className={styles.loading_container}>
+                <div className={styles.loading_spinner} />
+                <p className={styles.loading_text}>Chargement de la partie...</p>
+              </div>
+            )}
+
             {game && config && (appState === "playing" || appState === "finished" || appState === "loading") && (
               <div className={styles.content_container}>
                 <GamePlaying

@@ -36,6 +36,18 @@
   padding: 1rem;
 }
 
+.waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.05) 100%);
+  border: 2px solid hsl(var(--primary) / 0.3);
+  border-radius: 1rem;
+  margin-top: 2rem;
+}
+
 .loading__spinner {
   width: 2rem;
   height: 2rem;
@@ -54,4 +66,10 @@
 .loading__text {
   color: hsl(var(--muted-foreground));
   font-size: 0.875rem;
+}
+
+.loading__subtext {
+  font-size: 0.875rem;
+  color: hsl(var(--foreground) / 0.6);
+  text-align: center;
 }

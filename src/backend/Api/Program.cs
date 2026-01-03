@@ -1,5 +1,7 @@
 using Infrastructure.Services;
 using Infrastructure.Database;
+using Application.Interfaces;
+using Api.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -50,6 +52,7 @@ builder.Services.AddDbContext<TicTacToeDbContext>(options =>
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<RoomService>();
+builder.Services.AddScoped<IGameNotificationService, SignalRNotificationService>();
 
 // 4. Configurer l'authentification JWT
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
@@ -79,6 +82,24 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
     };
+    
+    // Configuration pour SignalR : lire le token depuis le query string
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            
+            // Si la requête vient du hub SignalR et contient un token
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/gamehub"))
+            {
+                context.Token = accessToken;
+            }
+            
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -90,13 +111,17 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:5173") // Vite dev server
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials(); // Nécessaire pour SignalR
     });
 });
 
 // 6. Ajouter Swagger pour la documentation API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// 7. Configurer SignalR
+builder.Services.AddSignalR();
 
 // ===== BUILD DE L'APPLICATION =====
 var app = builder.Build();
@@ -145,21 +170,24 @@ using (var scope = app.Services.CreateScope())
 
 // ===== CONFIGURATION DU PIPELINE (après Build) =====
 
-// Activer l'authentification et l'autorisation
-app.UseAuthentication();
-app.UseAuthorization();
+// 1. Activer CORS EN PREMIER (avant l'authentification pour SignalR)
+app.UseCors("AllowFrontend");
 
-// 5. Activer Swagger 
+// 2. Activer Swagger 
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// 6. Activer CORS
-app.UseCors("AllowFrontend");
+// 3. Activer l'authentification et l'autorisation
+app.UseAuthentication();
+app.UseAuthorization();
 
-// 7. Mapper les contrôleurs
+// 4. Mapper les contrôleurs
 app.MapControllers();
 
-// 8. Route de test (optionnelle)
+// 5. Mapper le hub SignalR
+app.MapHub<GameHub>("/gamehub");
+
+// 6. Route de test (optionnelle)
 app.MapGet("/", () => Results.Ok(new { message = "TicTacToe API is running" }));
 
 app.Run();

@@ -21,6 +21,8 @@ public static class GameMapper
             Board = game.Board.Select(s => s?.ToString()).ToArray(), // X, O ou null
             PlayerXId = game.PlayerXId,
             PlayerOId = game.PlayerOId,
+            PlayerXName = game.PlayerX?.Username,
+            PlayerOName = game.PlayerO?.Username,
             CurrentTurn = game.CurrentTurn.ToString(), // "X" ou "O"
             Status = game.Status.ToString(), // "InProgress", "XWins", etc.
             WinnerId = game.WinnerId,

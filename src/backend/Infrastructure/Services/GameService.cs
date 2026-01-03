@@ -3,6 +3,7 @@ using Domain.Enums;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Mappers;
+using Application.Interfaces;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,7 @@ namespace Infrastructure.Services;
 public class GameService
 {
     private readonly TicTacToeDbContext _dbContext;
+    private readonly IGameNotificationService? _notificationService;
     
     // Cache en mémoire pour les parties locales (VsComputer, VsLocal)
     private static readonly Dictionary<Guid, Game> _inMemoryGames = new();
@@ -25,9 +27,12 @@ public class GameService
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
     private static readonly TimeSpan GameExpiration = TimeSpan.FromHours(24);
 
-    public GameService(TicTacToeDbContext dbContext)
+    public GameService(
+        TicTacToeDbContext dbContext, 
+        IGameNotificationService? notificationService = null)
     {
         _dbContext = dbContext;
+        _notificationService = notificationService;
         CleanupExpiredGames();
     }
 
@@ -290,7 +295,10 @@ public class GameService
             }
 
             // Sinon, chercher en DB
-            game = await _dbContext.Games.FindAsync(gameId);
+            game = await _dbContext.Games
+                .Include(g => g.PlayerX)
+                .Include(g => g.PlayerO)
+                .FirstOrDefaultAsync(g => g.Id == gameId);
             
             if (game == null)
             {
@@ -425,8 +433,10 @@ public class GameService
                 await _dbContext.SaveChangesAsync();
             }
 
-            // 12. Retourner l'état mis à jour (le coup de l'IA sera géré côté frontend)
-            return GameMapper.ToDTO(game);
+            var gameDto = GameMapper.ToDTO(game);
+
+            // Retourner le DTO (SignalR sera géré par le contrôleur)
+            return gameDto;
         }
         catch (KeyNotFoundException)
         {

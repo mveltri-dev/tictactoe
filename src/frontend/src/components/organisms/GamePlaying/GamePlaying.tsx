@@ -96,30 +96,54 @@ export function GamePlaying({
     ? (config.chosenSymbol === "X" ? scores.O : scores.X)
     : scores.O
 
+  // Vérifier si la partie est en attente (board vide) - DÉSACTIVÉ car les deux joueurs doivent voir le plateau
+  // Le board commence vide et c'est normal, le premier joueur peut commencer à jouer
+  const isWaitingForOpponent = false
+  // Ancienne logique : config.gameMode === "VsPlayerOnline" && game.board.every(cell => cell === null) && game.status === "InProgress"
+
   return (
     <div className={styles.container}>
+      {/* État d'attente pour parties multijoueur */}
+      {isWaitingForOpponent && (
+        <motion.div
+          className={styles.waiting}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className={styles.loading__spinner} />
+          <p className={styles.loading__text}>
+            En attente que {playerOName} accepte l'invitation...
+          </p>
+          <p className={styles.loading__subtext}>
+            Vous pouvez attendre ici ou revenir au lobby
+          </p>
+        </motion.div>
+      )}
+
       {/* Scores avec ScoreBadges */}
-      <motion.div
-        className={styles.scores}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 } as const}
-      >
-        <ScoreBadge 
-          label={scorePlayer1Label} 
-          value={player1Score} 
-          variant="x" 
-        />
-        <ScoreBadge label="Nuls" value={scores.draws} variant="draw" />
-        <ScoreBadge 
-          label={scorePlayer2Label} 
-          value={player2Score} 
-          variant="o" 
-        />
-      </motion.div>
+      {!isWaitingForOpponent && (
+        <motion.div
+          className={styles.scores}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 } as const}
+        >
+          <ScoreBadge 
+            label={scorePlayer1Label} 
+            value={player1Score} 
+            variant="x" 
+          />
+          <ScoreBadge label="Nuls" value={scores.draws} variant="draw" />
+          <ScoreBadge 
+            label={scorePlayer2Label} 
+            value={player2Score} 
+            variant="o" 
+          />
+        </motion.div>
+      )}
 
       {/* Message d'erreur */}
-      {error && (
+      {error && !isWaitingForOpponent && (
         <motion.div 
           className={styles.error}
           initial={{ opacity: 0 }}
@@ -130,24 +154,28 @@ export function GamePlaying({
       )}
 
       {/* Status du jeu (À votre tour, etc.) */}
-      <StatusDisplay
-        currentPlayer={game.currentTurn}
-        winner={winnerSymbol}
-        isDraw={isDraw}
-        isAiTurn={isAiThinking}
-        player1Name={playerXName}
-        player2Name={playerOName}
-        gameMode={mapApiMode(config.gameMode)}
-        playerSymbol={config.chosenSymbol}
-      />
+      {!isWaitingForOpponent && (
+        <StatusDisplay
+          currentPlayer={game.currentTurn}
+          winner={winnerSymbol}
+          isDraw={isDraw}
+          isAiTurn={isAiThinking}
+          player1Name={playerXName}
+          player2Name={playerOName}
+          gameMode={mapApiMode(config.gameMode)}
+          playerSymbol={config.chosenSymbol}
+        />
+      )}
 
       {/* Plateau de jeu */}
-      <GameBoard
-        board={game.board}
-        onCellClick={onCellClick}
-        disabled={isLoading || isFinished || !canClick}
-        winningLine={game.winningLine || []}
-      />
+      {!isWaitingForOpponent && (
+        <GameBoard
+          board={game.board}
+          onCellClick={onCellClick}
+          disabled={isLoading || isFinished || !canClick}
+          winningLine={game.winningLine || []}
+        />
+      )}
 
       {/* Message de chargement nouvelle partie */}
       {isLoading && (

@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Infrastructure.Services;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using System.Security.Claims;
+using Api.Hubs;
 
 namespace Api.Controllers;
 
@@ -15,14 +17,17 @@ namespace Api.Controllers;
 public class GameController : ControllerBase
 {
     private readonly GameService _gameService;
+    private readonly IHubContext<GameHub> _hubContext;
 
     /// <summary>
     /// Constructeur avec injection de dépendance.
     /// </summary>
     /// <param name="gameService">Service de gestion des parties.</param>
-    public GameController(GameService gameService)
+    /// <param name="hubContext">Hub SignalR pour les notifications temps réel.</param>
+    public GameController(GameService gameService, IHubContext<GameHub> hubContext)
     {
         _gameService = gameService;
+        _hubContext = hubContext;
     }
 
     /// <summary>
@@ -126,6 +131,13 @@ public class GameController : ControllerBase
 
             // Jouer le coup via le service
             GameDTO game = await _gameService.MakeMove(request);
+
+            // Envoyer la mise à jour via SignalR pour les parties online
+            if (game.Mode == "VsPlayerOnline")
+            {
+                await _hubContext.Clients.Groups($"user_{game.PlayerXId}", $"user_{game.PlayerOId}")
+                    .SendAsync("GameUpdated", game);
+            }
 
             // Retourner 200 OK avec le DTO mis à jour
             return Ok(game);

@@ -2,3 +2,4 @@
 
 export * from "./GameDTO"
 export * from "./PlayerDTO"
+export * from "./auth"
