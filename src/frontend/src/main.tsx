@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App } from './pages/App'
+import { ToastProvider } from './components/organisms/toast/toast'
 import { ThemeProvider } from './contexts'
 import './styles/globals.css'
 
@@ -22,7 +23,9 @@ try {
     <React.StrictMode>
       <BrowserRouter>
         <ThemeProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </ThemeProvider>
       </BrowserRouter>
     </React.StrictMode>
