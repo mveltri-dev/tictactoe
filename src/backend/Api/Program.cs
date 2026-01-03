@@ -109,7 +109,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // Vite dev server
+        policy.WithOrigins(
+                "http://localhost:5173"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Nécessaire pour SignalR
@@ -169,6 +171,14 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ===== CONFIGURATION DU PIPELINE (après Build) =====
+
+// Middleware de logging pour déboguer CORS
+app.Use(async (context, next) =>
+{
+    app.Logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path} from {context.Request.Headers.Origin}");
+    await next();
+    app.Logger.LogInformation($"Response: {context.Response.StatusCode}");
+});
 
 // 1. Activer CORS EN PREMIER (avant l'authentification pour SignalR)
 app.UseCors("AllowFrontend");
