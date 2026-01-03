@@ -1,11 +1,14 @@
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
 import type { GameDTO, GameModeAPI, Symbol, AppState } from "../../../dtos"
 import { GameBoard } from "../GameBoard/GameBoard"
 import { StatusDisplay } from "../../molecules"
 import { ScoreBadge, GameButton } from "../../atoms"
 import { GameControls } from "../../molecules"
-import { Home, RotateCcw } from "lucide-react"
+import { Home, RotateCcw, Clock } from "lucide-react"
+import { matchmakingService } from "../../../services/matchmakingService"
+import { authService } from "../../../services/authService"
 import styles from "./GamePlaying.module.css"
 
 interface GameConfig {
@@ -54,6 +57,113 @@ export function GamePlaying({
   onRestart
 }: GamePlayingProps) {
   const navigate = useNavigate()
+  const [rematchStatus, setRematchStatus] = useState<'idle' | 'waiting' | 'opponent-waiting' | 'opponent-left'>('idle')
+  const [pendingGameId, setPendingGameId] = useState<string | null>(null)
+  
+  // Réinitialiser les états du rematch quand la partie change
+  useEffect(() => {
+    console.log('🔄 Nouvelle partie détectée, réinitialisation des états rematch')
+    setRematchStatus('idle')
+    setPendingGameId(null)
+  }, [game.id])
+  
+  // Écouter les invitations pour le rematch
+  useEffect(() => {
+    if (config.gameMode !== "VsPlayerOnline" || game.status === "InProgress") return
+    
+    const userId = authService.getUserIdFromToken()
+    const opponentId = userId === game.playerXId ? game.playerOId : game.playerXId
+    
+    // Écouter les demandes de rematch (nouvel événement dédié)
+    matchmakingService.onRematchRequest((data: any) => {
+      console.log('🔄 Demande de rematch reçue:', data)
+      
+      // Vérifier si c'est une demande de l'adversaire actuel
+      if (data.requesterId === opponentId) {
+        if (rematchStatus === 'waiting' && pendingGameId) {
+          // Les deux veulent rejouer ! Accepter automatiquement
+          console.log('✅ Les deux joueurs veulent rejouer ! Acceptation automatique')
+          matchmakingService.acceptRematch(data.gameId).then(() => {
+            navigate(`/game/${data.gameId}`)
+          })
+        } else {
+          // L'adversaire veut rejouer, on stocke la demande
+          console.log('📥 L\'adversaire veut rejouer, demande stockée')
+          setPendingGameId(data.gameId)
+          setRematchStatus('opponent-waiting')
+        }
+      }
+    })
+    
+    // Écouter si l'adversaire refuse le rematch
+    matchmakingService.onRematchDeclined((data: any) => {
+      console.log('❌ Rematch refusé:', data)
+      // Mettre à jour l'état pour montrer que l'adversaire a quitté
+      setRematchStatus((current) => {
+        console.log('État actuel:', current)
+        if (current === 'waiting' || current === 'opponent-waiting') {
+          return 'opponent-left'
+        }
+        return current
+      })
+      setPendingGameId(null)
+    })
+    
+    // Écouter si l'adversaire accepte le rematch
+    matchmakingService.onRematchAccepted((data: any) => {
+      console.log('✅ Rematch accepté:', data)
+      setRematchStatus((current) => {
+        if (current === 'waiting') {
+          // L'adversaire a accepté, naviguer vers la partie
+          console.log('🎮 Navigation vers la partie acceptée:', data.gameId)
+          navigate(`/game/${data.gameId}`)
+        }
+        return current
+      })
+    })
+  }, [config.gameMode, game.status, game.playerXId, game.playerOId, navigate])
+  
+  const handleRematch = async () => {
+    if (config.gameMode !== "VsPlayerOnline") return
+    
+    try {
+      const userId = authService.getUserIdFromToken()
+      const opponentId = userId === game.playerXId ? game.playerOId : game.playerXId
+      
+      console.log('🔄 Demande de rematch avec:', opponentId)
+      
+      // Vérifier si l'adversaire a déjà envoyé une demande de rematch
+      if (pendingGameId) {
+        // Les deux veulent rejouer ! Accepter la demande de l'adversaire
+        console.log('✅ Les deux joueurs veulent rejouer ! Acceptation de la demande')
+        await matchmakingService.acceptRematch(pendingGameId)
+        navigate(`/game/${pendingGameId}`)
+        return
+      }
+      
+      // Envoyer notre demande de rematch
+      const result = await matchmakingService.requestRematch(opponentId)
+      console.log('✅ Demande de rematch envoyée, gameId:', result.gameId)
+      
+      // Passer en mode attente
+      setRematchStatus('waiting')
+      setPendingGameId(result.gameId)
+    } catch (error) {
+      console.error('❌ Erreur lors de la réinvitation:', error)
+      setRematchStatus('opponent-left')
+    }
+  }
+  
+  const handleLeaveLobby = () => {
+    // Notifier l'adversaire si un rematch est en cours
+    if (pendingGameId) {
+      // Si on avait envoyé une demande OU si l'adversaire en avait envoyé une
+      if (rematchStatus === 'waiting' || rematchStatus === 'opponent-waiting') {
+        matchmakingService.declineRematch(pendingGameId).catch(console.error)
+      }
+    }
+    navigate('/lobby')
+  }
   
   try {
     const getPlayerName = (symbol: Symbol): string => {
@@ -196,25 +306,59 @@ export function GamePlaying({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <GameButton 
-            onClick={() => navigate('/lobby')} 
-            variant="secondary"
-            className={styles.controlButton}
-          >
-            <Home size={20} />
-            Retour au lobby
-          </GameButton>
-          <GameButton 
-            onClick={() => {
-              // Retourner au lobby pour relancer une invitation
-              navigate('/lobby')
-            }} 
-            variant="primary"
-            className={styles.controlButton}
-          >
-            <RotateCcw size={20} />
-            Rejouer
-          </GameButton>
+          {/* Message de statut */}
+          {rematchStatus === 'waiting' && (
+            <motion.div
+              className={styles.statusMessage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <Clock size={16} />
+              En attente de l'adversaire...
+            </motion.div>
+          )}
+          
+          {rematchStatus === 'opponent-waiting' && (
+            <motion.div
+              className={styles.statusMessage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <Clock size={16} />
+              Votre adversaire veut rejouer !
+            </motion.div>
+          )}
+          
+          {rematchStatus === 'opponent-left' && (
+            <motion.div
+              className={styles.statusMessageError}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              L'adversaire a quitté la partie
+            </motion.div>
+          )}
+          
+          <div className={styles.buttonGroup}>
+            <GameButton 
+              onClick={handleLeaveLobby} 
+              variant="secondary"
+              className={styles.controlButton}
+              disabled={rematchStatus === 'waiting'}
+            >
+              <Home size={20} />
+              Retour au lobby
+            </GameButton>
+            <GameButton 
+              onClick={handleRematch}
+              variant="primary"
+              className={styles.controlButton}
+              disabled={rematchStatus === 'waiting' || rematchStatus === 'opponent-left'}
+            >
+              <RotateCcw size={20} />
+              {rematchStatus === 'waiting' ? 'En attente...' : 'Rejouer'}
+            </GameButton>
+          </div>
         </motion.div>
       )}
 
