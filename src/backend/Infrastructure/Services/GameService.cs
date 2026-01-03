@@ -439,7 +439,7 @@ public class GameService
             {
                 game.Status = playerSymbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
                 game.WinnerId = request.PlayerId;
-                game.WinningLine = winningLine;
+                // Suppression de WinningLine
             }
             // 9. Vérifier s'il y a match nul
             else if (IsBoardFull(game))
@@ -519,10 +519,25 @@ public class GameService
                 return GameMapper.ToDTO(game);
             }
 
-            // Note: Le code de vérification du tour de l'ordinateur a été retiré
-            // car les tables Players n'existent plus. Les parties VsComputer sont
-            // gérées en mémoire uniquement.
-
+            // Si la partie est locale (VsComputer) et c'est au tour de l'IA, jouer automatiquement
+            if (!RequiresDatabasePersistence(game.Mode))
+            {
+                // Récupérer le joueur IA (toujours O dans ce mode)
+                PlayerSymbol aiSymbol = game.PlayerOId != null && game.PlayerOId != Guid.Empty ? PlayerSymbol.O : PlayerSymbol.X;
+                Player? aiPlayer = null;
+                lock (_cacheLock)
+                {
+                    _inMemoryPlayers.TryGetValue(game.PlayerOId, out aiPlayer);
+                }
+                if (aiPlayer != null && game.CurrentTurn == aiPlayer.Symbol && game.Status == GameStatus.InProgress)
+                {
+                    await PlayComputerMove(game, aiPlayer);
+                    lock (_cacheLock)
+                    {
+                        _inMemoryGames[game.Id] = game;
+                    }
+                }
+            }
             return GameMapper.ToDTO(game);
         }
         catch (KeyNotFoundException)
@@ -616,7 +631,6 @@ public class GameService
         {
             game.Status = computerPlayer.Symbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
             game.WinnerId = computerPlayer.Id;
-            game.WinningLine = winningLine;
         }
         // 6. Vérifier s'il y a match nul
         else if (IsBoardFull(game))

@@ -28,7 +28,7 @@ public static class GameMapper
             CurrentTurn = game.CurrentTurn.ToString(), // "X" ou "O"
             Status = game.Status.ToString(), // "InProgress", "XWins", etc.
             WinnerId = game.WinnerId,
-            WinningLine = game.WinningLine,
+                // WinningLine = game.WinningLine,
             CreatedAt = game.CreatedAt,
             Mode = game.Mode.ToString() // "VsComputer", "VsPlayerLocal", etc.
         };

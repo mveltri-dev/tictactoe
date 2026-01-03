@@ -33,6 +33,16 @@ const mapLocalToApiMode = (localMode: GameMode): GameModeAPI => {
 export function App() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true)
+  const [language, setLanguage] = useState("fr")
+  const [gameMode, setGameMode] = useState<GameModeAPI>("VsComputer")
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+
+  // Ajout : navigation automatique après auto-restart local
+  type UseGameHook = typeof useGame
+  const useGameWithRestartNav: UseGameHook = (onAutoRestarted) => useGame(onAutoRestarted)
+
+  // Utilisation du hook avec navigation
   const {
     game,
     config,
@@ -44,12 +54,11 @@ export function App() {
     makeMove,
     resetGame,
     changeGameMode
-  } = useGame()
-
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true)
-  const [language, setLanguage] = useState("fr")
-  const [gameMode, setGameMode] = useState<GameModeAPI>("VsComputer")
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+  } = useGameWithRestartNav((newGameId) => {
+    if (location.pathname.startsWith('/game/')) {
+      navigate(`/game/${newGameId}`)
+    }
+  })
 
   // Charger une partie existante si on accède à /game/:id
   useEffect(() => {
@@ -183,7 +192,7 @@ export function App() {
       onLanguageChange={setLanguage}
     >
       {/* Affichage du jeu pour les parties en cours */}
-      {game && config && (appState === "playing" || appState === "finished" || appState === "loading") && location.pathname.startsWith('/game/') && (
+      {game && config && (appState === "playing" || (appState === "finished" && location.pathname.startsWith('/game/'))) && appState !== "loading" && location.pathname.startsWith('/game/') && (
         <div className={styles.content_container}>
           <GamePlaying
             game={game}
@@ -197,7 +206,15 @@ export function App() {
           />
         </div>
       )}
-      
+
+      {/* Écran de chargement dédié pour le restart automatique */}
+      {appState === "loading" && location.pathname.startsWith('/game/') && (
+        <div className={styles.loading_container}>
+          <div className={styles.loading__spinner} />
+          <p className={styles.loading__text}>Nouvelle partie...</p>
+        </div>
+      )}
+
       {/* Game Mode Selector - Fixed Top Right */}
       <div className={styles.mode_selector_container}>
         <GameModeSelector
