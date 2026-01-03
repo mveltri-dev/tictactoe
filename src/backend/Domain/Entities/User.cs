@@ -72,4 +72,28 @@ public class User
     {
         LastLoginAt = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Met à jour le nom d'utilisateur.
+    /// </summary>
+    /// <param name="username">Nouveau nom d'utilisateur.</param>
+    public void UpdateUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Le nom d'utilisateur ne peut pas être vide.", nameof(username));
+        
+        Username = username;
+    }
+
+    /// <summary>
+    /// Met à jour l'adresse email.
+    /// </summary>
+    /// <param name="email">Nouvelle adresse email.</param>
+    public void UpdateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("L'email ne peut pas être vide.", nameof(email));
+        
+        Email = email.ToLowerInvariant();
+    }
 }
