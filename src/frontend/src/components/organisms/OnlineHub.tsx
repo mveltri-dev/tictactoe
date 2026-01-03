@@ -6,6 +6,7 @@ import { friendsService, type Friend, type FriendRequest } from "../../services/
 import { matchmakingService, type MatchFoundData } from "../../services/matchmakingService"
 import styles from "./OnlineHub.module.css"
 import { Leaderboard } from "../Leaderboard"
+import { useToast } from "../organisms/toast/toast"
 
 type OnlineView = "hub" | "profile" | "leaderboard" | "friends" | "play"
 
@@ -46,6 +47,7 @@ interface SentInvitation {
 }
 
 export function OnlineHub({ onLogout, onStartMatchmaking, onGameFound }: OnlineHubProps) {
+  const { showSuccess, showError } = useToast()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [stats, setStats] = useState<UserStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -380,28 +382,7 @@ function PlayView({
   const [showFriendsList, setShowFriendsList] = useState(false)
   const [friends, setFriends] = useState<Friend[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-
-  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
-    setNotification({ message, type })
-    setTimeout(() => setNotification(null), 4000)
-  }
-
-  const getUserFriendlyError = (err: unknown): string => {
-    if (err instanceof Error) {
-      const message = err.message.toLowerCase()
-      if (message.includes('fetch') || message.includes('network') || message.includes('failed to fetch')) {
-        return '⚠️ Impossible de se connecter au serveur. Vérifiez votre connexion internet et réessayez.'
-      }
-      if (message.includes('unauthorized') || message.includes('401')) {
-        return '🔒 Session expirée. Veuillez vous reconnecter.'
-      }
-      if (message.includes('timeout')) {
-        return '⏱️ La requête a pris trop de temps. Réessayez dans quelques instants.'
-      }
-    }
-    return '⚠️ Une erreur inattendue s\'est produite. Veuillez réessayer.'
-  }
+  const { showSuccess, showError } = useToast()
 
   useEffect(() => {
     if (showFriendsList) {
@@ -451,13 +432,13 @@ function PlayView({
         invitedAt: new Date(inv.invitedAt)
       }))
       setSentInvitations(formattedSentInvitations)
-      showNotification(`Invitation envoyée à ${friends.find(f => f.id === friendId)?.username} !`, 'success')
+      showSuccess(`Invitation envoyée à ${friends.find(f => f.id === friendId)?.username} !`)
       // Rediriger vers la vue "play" après l'envoi
       setTimeout(() => {
         setShowFriendsList(false)
       }, 1500)
     } catch (err) {
-      showNotification(getUserFriendlyError(err), 'error')
+      showError(getUserFriendlyError(err))
     }
   }
 
@@ -476,7 +457,7 @@ function PlayView({
       // Rediriger vers la partie
       window.location.href = `/game/${gameId}`
     } catch (err) {
-      showNotification(getUserFriendlyError(err), 'error')
+      showError(getUserFriendlyError(err))
     }
   }
 
@@ -484,52 +465,32 @@ function PlayView({
     try {
       await matchmakingService.declineInvitation(gameId)
       setGameInvitations(prev => prev.filter(inv => inv.gameId !== gameId))
-      showNotification('Invitation refusée', 'success')
+      showSuccess('Invitation refusée')
     } catch (err) {
-      showNotification(getUserFriendlyError(err), 'error')
+      showError(getUserFriendlyError(err))
     }
   }
 
   if (isSearching) {
     return (
-      <>
-        {notification && (
-          <div className={`${styles.notification} ${notification.type === 'success' ? styles.notification_success : styles.notification_error}`}>
-            {notification.message}
-          </div>
-        )}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className={styles.view_container}
+      <div className={styles.searching_container}>
+        <Loader2 className={styles.searching_spinner} size={64} />
+        <h3 className={styles.searching_title}>Recherche d'un adversaire...</h3>
+        <p className={styles.searching_subtitle}>Cela ne devrait prendre que quelques instants</p>
+        <button
+          onClick={handleCancelMatchmaking}
+          className={styles.form_button}
         >
-        <div className={styles.searching_container}>
-          <Loader2 className={styles.searching_spinner} size={64} />
-          <h3 className={styles.searching_title}>Recherche d'un adversaire...</h3>
-          <p className={styles.searching_subtitle}>Cela ne devrait prendre que quelques instants</p>
-          <button
-            onClick={handleCancelMatchmaking}
-            className={styles.form_button}
-          >
-            Annuler la recherche
-          </button>
-        </div>
-      </motion.div>
-      </>
+          Annuler la recherche
+        </button>
+      </div>
     )
   }
 
   if (showFriendsList) {
     return (
-      <>
-        {notification && (
-          <div className={`${styles.notification} ${notification.type === 'success' ? styles.notification_success : styles.notification_error}`}>
-            {notification.message}
-          </div>
-        )}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         className={styles.view_container}
@@ -571,23 +532,16 @@ function PlayView({
           )}
         </div>
       </motion.div>
-      </>
     )
   }
 
   return (
-    <>
-      {notification && (
-        <div className={`${styles.notification} ${notification.type === 'success' ? styles.notification_success : styles.notification_error}`}>
-          {notification.message}
-        </div>
-      )}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        className={styles.view_container}
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={styles.view_container}
+    >
       <h3 className={styles.view_title}>Trouver une partie</h3>
       <p className={styles.view_subtitle}>Choisissez votre mode de jeu</p>
       
@@ -692,7 +646,6 @@ function PlayView({
         </motion.button>
       </div>
     </motion.div>
-    </>
   )
 }
 
@@ -709,7 +662,7 @@ function FriendsView() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+  const { showSuccess, showError } = useToast()
 
   // Charger la liste des amis et des demandes au montage
   useEffect(() => {
@@ -748,19 +701,14 @@ function FriendsView() {
     }
   }
 
-  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
-    setNotification({ message, type })
-    setTimeout(() => setNotification(null), 4000)
-  }
-
   const handleSendRequest = async (userId: string) => {
     try {
       await friendsService.sendFriendRequest(userId)
       setSearchQuery('')
       setShowAddFriend(false)
-      showNotification('✅ Demande d\'ami envoyée avec succès !', 'success')
+      showSuccess('Demande d\'ami envoyée avec succès !')
     } catch (err) {
-      showNotification('⚠️ Impossible d\'envoyer la demande. Réessayez dans quelques instants.', 'error')
+      showError('Impossible d\'envoyer la demande. Réessayez dans quelques instants.')
     }
   }
 
@@ -769,9 +717,9 @@ function FriendsView() {
       await friendsService.acceptFriendRequest(requestId)
       await loadFriends()
       await loadFriendRequests()
-      showNotification('✅ Demande acceptée ! Vous êtes maintenant amis.', 'success')
+      showSuccess('Demande acceptée ! Vous êtes maintenant amis.')
     } catch (err) {
-      showNotification('⚠️ Impossible d\'accepter la demande. Réessayez.', 'error')
+      showError('Impossible d\'accepter la demande. Réessayez.')
     }
   }
 
@@ -779,9 +727,9 @@ function FriendsView() {
     try {
       await friendsService.rejectFriendRequest(requestId)
       await loadFriendRequests()
-      showNotification('✅ Demande refusée.', 'success')
+      showSuccess('Demande refusée.')
     } catch (err) {
-      showNotification('⚠️ Impossible de refuser la demande. Réessayez.', 'error')
+      showError('Impossible de refuser la demande. Réessayez.')
     }
   }
 
@@ -923,17 +871,6 @@ function FriendsView() {
       exit={{ opacity: 0, y: -10 }}
       className={styles.view_container}
     >
-      {notification && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className={`${styles.notification} ${notification.type === 'error' ? styles.notification_error : styles.notification_success}`}
-        >
-          {notification.message}
-        </motion.div>
-      )}
-
       <div className={styles.friends_header}>
         <h3 className={styles.view_title}>Gérer mes amis</h3>
         <button
