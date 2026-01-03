@@ -1,13 +1,14 @@
 import type React from "react"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { X, User, Lock, Mail } from "lucide-react"
+import { X, User, Lock, Mail, Eye, EyeOff } from "lucide-react"
 import { GameButton } from "@/components/atoms/GameButton"
+import { authService } from "@/services/authService"
 import styles from "./LoginForm.module.css"
 
 interface LoginFormProps {
   onLogin: (username: string, password: string) => void
-  onClose: () => void
+  onClose?: () => void
 }
 
 export function LoginForm({ onLogin, onClose }: LoginFormProps) {
@@ -15,10 +16,31 @@ export function LoginForm({ onLogin, onClose }: LoginFormProps) {
   const [password, setPassword] = useState("")
   const [email, setEmail] = useState("")
   const [isRegistering, setIsRegistering] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onLogin(username, password)
+    setError(null)
+    setIsLoading(true)
+    
+    try {
+      if (isRegistering) {
+        await authService.register(username, email, password)
+        // Après le register, on peut directement appeler onLogin avec le token
+        const token = authService.getToken()
+        if (token) {
+          onLogin(username, password) // Appeler onLogin pour naviguer
+        }
+      } else {
+        await onLogin(username, password)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -39,9 +61,11 @@ export function LoginForm({ onLogin, onClose }: LoginFormProps) {
         <div className={styles['modal__decoration--top']} />
         <div className={styles['modal__decoration--bottom']} />
 
-        <button onClick={onClose} className={styles.modal__close}>
-          <X className={styles.modal__close_icon} />
-        </button>
+        {onClose && (
+          <button onClick={onClose} className={styles.modal__close}>
+            <X className={styles.modal__close_icon} />
+          </button>
+        )}
 
         <div className={styles.modal__content}>
           <div className={styles.modal__header}>
@@ -55,6 +79,12 @@ export function LoginForm({ onLogin, onClose }: LoginFormProps) {
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
+            {error && (
+              <div className={styles.form__error}>
+                {error}
+              </div>
+            )}
+            
             <div className={styles.form__field}>
               <label htmlFor="username" className={styles.form__label}>
                 Nom d'utilisateur
@@ -105,7 +135,7 @@ export function LoginForm({ onLogin, onClose }: LoginFormProps) {
               <div className={styles.form__input_wrapper}>
                 <Lock className={styles.form__icon} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -113,12 +143,25 @@ export function LoginForm({ onLogin, onClose }: LoginFormProps) {
                   placeholder="Votre mot de passe"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={styles.form__icon_right}
+                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 
             <div className={styles.form__submit}>
-              <GameButton type="submit" variant="primary" className={styles.form__submit_button}>
-                {isRegistering ? "Créer mon compte" : "Se connecter"}
+              <GameButton 
+                type="submit" 
+                variant="primary" 
+                className={styles.form__submit_button}
+                disabled={isLoading}
+              >
+                {isLoading ? "Chargement..." : (isRegistering ? "Créer mon compte" : "Se connecter")}
               </GameButton>
             </div>
           </form>

@@ -8,27 +8,20 @@ import styles from "./GameModeSelector.module.css"
 interface GameModeSelectorProps {
   currentMode: GameMode
   onSelectMode: (mode: GameMode) => void
-  isLoggedIn: boolean
-  onLoginClick: () => void
 }
 
-export function GameModeSelector({ currentMode, onSelectMode, isLoggedIn, onLoginClick }: GameModeSelectorProps) {
+export function GameModeSelector({ currentMode, onSelectMode }: GameModeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const modes = [
-    { id: "ai" as GameMode, label: "Contre EasiBot", icon: Cpu, requiresAuth: false },
-    { id: "local" as GameMode, label: "2 joueurs (local)", icon: Users, requiresAuth: false },
-    { id: "friend" as GameMode, label: "Contre un ami", icon: Wifi, requiresAuth: true },
+    { id: "ai" as GameMode, label: "Contre EasiBot", icon: Cpu },
+    { id: "local" as GameMode, label: "2 joueurs (local)", icon: Users },
+    { id: "friend" as GameMode, label: "Contre un ami", icon: Wifi },
   ]
 
   const currentModeData = modes.find((m) => m.id === currentMode)
 
-  const handleSelectMode = (mode: GameMode, requiresAuth: boolean) => {
-    if (requiresAuth && !isLoggedIn) {
-      onLoginClick()
-      setIsOpen(false)
-      return
-    }
+  const handleSelectMode = (mode: GameMode) => {
     onSelectMode(mode)
     setIsOpen(false)
   }
@@ -80,7 +73,7 @@ export function GameModeSelector({ currentMode, onSelectMode, isLoggedIn, onLogi
                 return (
                   <motion.button
                     key={mode.id}
-                    onClick={() => handleSelectMode(mode.id, mode.requiresAuth)}
+                    onClick={() => handleSelectMode(mode.id)}
                     className={styles.mode_button}
                     whileHover={{ x: 3 }}
                   >
@@ -88,9 +81,6 @@ export function GameModeSelector({ currentMode, onSelectMode, isLoggedIn, onLogi
                       <mode.icon className={iconClass} />
                       <span className={styles.mode_button__label}>{mode.label}</span>
                     </div>
-                    {mode.requiresAuth && !isLoggedIn && (
-                      <span className={cn(styles.mode_button__badge, styles['mode_button__badge--locked'])}>Connexion</span>
-                    )}
                     {currentMode === mode.id && (
                       <span className={cn(styles.mode_button__badge, styles['mode_button__badge--active'])}>Actif</span>
                     )}

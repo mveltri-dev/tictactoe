@@ -6,5 +6,8 @@ export { GameHeader } from "./GameHeader"
 export { SettingsMenu } from "./SettingsMenu"
 export { GamePlaying } from "./GamePlaying"
 export { GameModeSelector } from "./GameModeSelector"
+export { AuthForm } from "./AuthForm"
+export { RoomLobby } from "./RoomLobby"
+export { OnlineHub } from "./OnlineHub"
 
 
