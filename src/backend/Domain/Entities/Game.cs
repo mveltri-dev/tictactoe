@@ -60,7 +60,12 @@ public class Game
 
         public void SetWinningLine(int[] positions)
         {
-            if (positions == null || positions.Length < 3)
+            if (positions == null)
+            {
+                WinningLine = null;
+                return;
+            }
+            if (positions.Length < 3)
                 throw new ArgumentException("La ligne gagnante doit contenir au moins 3 positions");
             WinningLine = positions;
         }

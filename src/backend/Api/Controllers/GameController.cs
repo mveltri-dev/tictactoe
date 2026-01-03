@@ -16,6 +16,44 @@ namespace Api.Controllers;
 [Route("api/[controller]")]
 public class GameController : ControllerBase
 {
+    /// <summary>
+    /// Permet à un joueur d'abandonner une partie en cours (défaite).
+    /// </summary>
+    [HttpPost("{id}/forfeit")]
+    [ProducesResponseType(typeof(GameDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ForfeitGame(Guid id, [FromBody] Application.DTOs.Requests.ForfeitGameRequest request)
+    {
+        try
+        {
+            if (id != request.GameId)
+            {
+                return BadRequest(new { error = "L'ID de la partie dans l'URL ne correspond pas à celui dans la requête." });
+            }
+            // Appeler le service pour marquer la partie comme perdue pour le joueur
+            GameDTO game = await _gameService.ForfeitGame(request.GameId, request.PlayerId);
+            // Notifier l'adversaire via SignalR si partie online
+            if (game.Mode == "VsPlayerOnline")
+            {
+                await _hubContext.Clients.Groups($"user_{game.PlayerXId}", $"user_{game.PlayerOId}")
+                    .SendAsync("GameUpdated", game);
+            }
+            return Ok(game);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Erreur serveur : {ex.Message}" });
+        }
+    }
     private readonly GameService _gameService;
     private readonly IHubContext<GameHub> _hubContext;
 

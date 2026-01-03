@@ -14,6 +14,61 @@ namespace Infrastructure.Services;
 /// </summary>
 public class GameService
 {
+    /// <summary>
+    /// Permet à un joueur d'abandonner une partie en cours (défaite).
+    /// </summary>
+    public async Task<GameDTO> ForfeitGame(Guid gameId, Guid playerId)
+    {
+        // Récupérer la partie (mémoire ou DB)
+        Game? game;
+        bool isInMemory;
+        lock (_cacheLock)
+        {
+            isInMemory = _inMemoryGames.TryGetValue(gameId, out game);
+        }
+        if (!isInMemory)
+        {
+            game = await _dbContext.Games.FindAsync(gameId);
+        }
+        if (game == null)
+        {
+            throw new KeyNotFoundException($"Partie introuvable avec l'ID : {gameId}");
+        }
+        // Vérifier que la partie est en cours
+        if (game.Status != GameStatus.InProgress)
+        {
+            throw new InvalidOperationException($"La partie n'est pas en cours.");
+        }
+        // Déterminer le symbole du joueur qui abandonne
+        PlayerSymbol loserSymbol;
+        if (playerId == game.PlayerXId)
+            loserSymbol = PlayerSymbol.X;
+        else if (playerId == game.PlayerOId)
+            loserSymbol = PlayerSymbol.O;
+        else
+            throw new KeyNotFoundException($"Le joueur {playerId} ne participe pas à cette partie.");
+        // Déterminer le gagnant
+        PlayerSymbol winnerSymbol = loserSymbol == PlayerSymbol.X ? PlayerSymbol.O : PlayerSymbol.X;
+        // Mettre à jour le statut et le gagnant
+        game.Status = winnerSymbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
+        game.WinnerId = winnerSymbol == PlayerSymbol.X ? game.PlayerXId : game.PlayerOId;
+        // Optionnel : WinningLine = null (abandon)
+        game.SetWinningLine(null);
+        // Persister
+        if (isInMemory)
+        {
+            lock (_cacheLock)
+            {
+                _inMemoryGames[game.Id] = game;
+            }
+        }
+        else
+        {
+            _dbContext.Games.Update(game);
+            await _dbContext.SaveChangesAsync();
+        }
+        return GameMapper.ToDTO(game);
+    }
     private readonly TicTacToeDbContext _dbContext;
     private readonly IGameNotificationService? _notificationService;
     
