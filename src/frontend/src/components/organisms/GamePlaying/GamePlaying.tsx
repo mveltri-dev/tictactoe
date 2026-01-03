@@ -33,6 +33,7 @@ interface GamePlayingProps {
   onCellClick: (position: number) => void
   onNewGame: () => void
   onRestart: () => void
+  modeLabel?: GameModeAPI
 }
 
 // Map API mode to local mode
@@ -54,7 +55,8 @@ export function GamePlaying({
   scores,
   onCellClick,
   onNewGame,
-  onRestart
+  onRestart,
+  modeLabel
 }: GamePlayingProps) {
   const navigate = useNavigate()
   const [rematchStatus, setRematchStatus] = useState<'idle' | 'waiting' | 'opponent-waiting' | 'opponent-left'>('idle')
@@ -224,6 +226,17 @@ export function GamePlaying({
 
   return (
     <div className={styles.container}>
+      {/* Affichage du mode de jeu courant */}
+      <div className={styles.mode_label}>
+        {(() => {
+          switch (modeLabel) {
+            case "VsComputer": return "Mode: Play vs EasyBot"
+            case "VsPlayerLocal": return "Mode: Local Game"
+            case "VsPlayerOnline": return "Mode: Online Multiplayer"
+            default: return "Mode: Unknown"
+          }
+        })()}
+      </div>
       {/* État d'attente pour parties multijoueur */}
       {isWaitingForOpponent && (
         <motion.div

@@ -1,3 +1,11 @@
+/* Label du mode de jeu */
+.mode_label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: hsl(var(--primary));
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
 /* GamePlaying - Organism */
 .container {
   display: flex;
