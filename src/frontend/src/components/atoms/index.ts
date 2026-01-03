@@ -7,5 +7,6 @@ export { ScoreBadge } from "./ScoreBadge"
 export { CellMark } from "./CellMark"
 export { GameButton } from "./GameButton"
 export { ThemeToggle } from "./ThemeToggle"
+export { Toast } from "./Toast"
 
 
