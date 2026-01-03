@@ -74,7 +74,7 @@ export function StatusDisplay({
             exit={{ scale: 0, rotate: 180 }}
             transition={{ type: "spring", stiffness: 200 } as const}
           >
-            <Trophy className={styles.status__trophy} />
+            <Trophy className={cn(styles.status__trophy, winner === "X" ? styles["status__text--x"] : winner === "O" ? styles["status__text--o"] : undefined)} />
           </motion.div>
         )}
       </AnimatePresence>
