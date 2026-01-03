@@ -421,6 +421,160 @@ public class MatchmakingController : ControllerBase
             gameId = game.Id
         });
     }
+    
+    /// <summary>
+    /// Demande de rematch après une partie terminée.
+    /// Ne crée pas d'invitation visible, utilise un événement SignalR dédié.
+    /// </summary>
+    [HttpPost("rematch/{opponentId}")]
+    public async Task<IActionResult> RequestRematch(string opponentId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (!Guid.TryParse(opponentId, out var opponentGuid))
+        {
+            return BadRequest("Invalid opponent ID");
+        }
+
+        var userGuid = Guid.Parse(userId);
+
+        // Vérifier que l'adversaire existe
+        var opponent = await _context.Users.FindAsync(opponentGuid);
+        if (opponent == null)
+        {
+            return NotFound("Adversaire introuvable");
+        }
+
+        var user = await _context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound("Utilisateur introuvable");
+        }
+
+        // Créer une nouvelle partie (userGuid sera toujours X)
+        // IsInvitationAccepted = true pour éviter que le rematch apparaisse dans les invitations du lobby
+        var game = new Game(userGuid, opponentGuid, GameMode.VsPlayerOnline)
+        {
+            IsInvitationAccepted = true
+        };
+        _context.Games.Add(game);
+        await _context.SaveChangesAsync();
+
+        // Notifier l'adversaire via SignalR avec un événement dédié
+        Console.WriteLine($"[SignalR] Envoi RematchRequest au groupe: user_{opponentGuid}");
+        await _hubContext.Clients.Group($"user_{opponentGuid}").SendAsync("RematchRequest", new
+        {
+            gameId = game.Id,
+            requesterId = userGuid,
+            requesterUsername = user.Username,
+            yourSymbol = "O",
+            requesterSymbol = "X"
+        });
+        Console.WriteLine($"[SignalR] RematchRequest envoyé avec succès");
+
+        return Ok(new
+        {
+            gameId = game.Id,
+            message = "Demande de rematch envoyée"
+        });
+    }
+
+    /// <summary>
+    /// Accepte une demande de rematch.
+    /// </summary>
+    [HttpPost("rematch/accept/{gameId}")]
+    public async Task<IActionResult> AcceptRematch(string gameId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (!Guid.TryParse(gameId, out var gameGuid))
+        {
+            return BadRequest("Invalid game ID");
+        }
+
+        var userGuid = Guid.Parse(userId);
+
+        var game = await _context.Games
+            .Include(g => g.PlayerX)
+            .FirstOrDefaultAsync(g => g.Id == gameGuid);
+
+        if (game == null)
+        {
+            return NotFound("Partie introuvable");
+        }
+
+        // Vérifier que l'utilisateur est bien PlayerO
+        if (game.PlayerOId != userGuid)
+        {
+            return BadRequest("Vous n'êtes pas l'adversaire de cette partie");
+        }
+
+        // Notifier le demandeur via SignalR
+        Console.WriteLine($"[SignalR] Envoi RematchAccepted au groupe: user_{game.PlayerXId}");
+        await _hubContext.Clients.Group($"user_{game.PlayerXId}").SendAsync("RematchAccepted", new
+        {
+            gameId = game.Id,
+            accepterId = userGuid
+        });
+
+        return Ok(new { message = "Rematch accepté" });
+    }
+
+    /// <summary>
+    /// Refuse une demande de rematch.
+    /// </summary>
+    [HttpPost("rematch/decline/{gameId}")]
+    public async Task<IActionResult> DeclineRematch(string gameId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (!Guid.TryParse(gameId, out var gameGuid))
+        {
+            return BadRequest("Invalid game ID");
+        }
+
+        var userGuid = Guid.Parse(userId);
+
+        var game = await _context.Games
+            .FirstOrDefaultAsync(g => g.Id == gameGuid);
+
+        if (game == null)
+        {
+            return NotFound("Partie introuvable");
+        }
+
+        // Vérifier que l'utilisateur est bien PlayerO
+        if (game.PlayerOId != userGuid)
+        {
+            return BadRequest("Vous n'êtes pas l'adversaire de cette partie");
+        }
+
+        // Supprimer la partie
+        _context.Games.Remove(game);
+        await _context.SaveChangesAsync();
+
+        // Notifier le demandeur via SignalR
+        Console.WriteLine($"[SignalR] Envoi RematchDeclined au groupe: user_{game.PlayerXId}");
+        await _hubContext.Clients.Group($"user_{game.PlayerXId}").SendAsync("RematchDeclined", new
+        {
+            gameId = game.Id,
+            declinerId = userGuid
+        });
+
+        return Ok(new { message = "Rematch refusé" });
+    }
 }
 
 public class MatchmakingEntry
