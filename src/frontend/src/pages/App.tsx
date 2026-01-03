@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useToast } from "../components/organisms/toast/toast"
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
@@ -39,6 +39,8 @@ export function App() {
   const [language, setLanguage] = useState("fr")
   const [gameMode, setGameMode] = useState<GameModeAPI>("VsComputer")
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+  // Flag pour ignorer le chargement de partie après un changement de mode
+  const ignoreNextLoadRef = useRef(false)
 
   // Ajout : navigation automatique après auto-restart local
   type UseGameHook = typeof useGame
@@ -66,6 +68,11 @@ export function App() {
   useEffect(() => {
     const match = location.pathname.match(/^\/game\/([^/]+)$/)
     if (match) {
+      if (ignoreNextLoadRef.current) {
+        console.log('[App] Ignorer le chargement de partie suite à un changement de mode')
+        ignoreNextLoadRef.current = false
+        return
+      }
       const gameId = match[1]
       // Ne charger que si on n'a pas déjà cette partie
       if (!game || game.id !== gameId) {
@@ -92,29 +99,36 @@ export function App() {
   // Quand on change de mode de jeu, rediriger vers la configuration
   const handleGameModeChange = async (mode: GameMode) => {
     const apiMode = mapLocalToApiMode(mode)
+    console.log('[handleGameModeChange] mode:', mode, '| apiMode:', apiMode)
     setGameMode(apiMode)
-    
+
     // Si mode online, gérer l'authentification
     if (apiMode === "VsPlayerOnline") {
       if (!token) {
-        // Pas de token, rediriger vers login SANS changer le mode dans useGame
-        console.log('Redirection vers /login car pas de token')
+        console.log('[handleGameModeChange] Redirection vers /login car pas de token')
         navigate('/login')
-        return // Sortir immédiatement
+        return
       } else {
-        // Token présent, aller au lobby
-        console.log('Redirection vers /lobby car token présent')
+        console.log('[handleGameModeChange] Redirection vers /lobby car token présent')
         navigate('/lobby')
-        return // Sortir immédiatement
+        return
       }
     }
-    
+
     // Pour les modes local et bot : changer le mode dans useGame
+    console.log('[handleGameModeChange] Changement de mode dans useGame')
     changeGameMode(apiMode)
-    
-    // Rester sur la page de configuration
-    if (location.pathname !== '/') {
+    console.log('[handleGameModeChange] Path actuel:', location.pathname)
+    if (location.pathname.startsWith('/game/') || location.pathname !== '/') {
+      console.log('[handleGameModeChange] Navigation vers / puis reset du jeu')
+      ignoreNextLoadRef.current = true
       navigate('/')
+      setTimeout(() => {
+        resetGame()
+      }, 0)
+    } else {
+      console.log('[handleGameModeChange] Déjà sur /, reset du jeu et remount forcé')
+      resetGame()
     }
   }
 
@@ -181,8 +195,8 @@ export function App() {
   const handleStartGame = async (request: CreateGameRequest) => {
     const newGame = await createGame({
       ...request,
-      width: 4,
-      height: 5
+      width: 3,
+      height: 3
     })
     if (newGame) {
       navigate(`/game/${newGame.id}`)
@@ -274,6 +288,7 @@ export function App() {
             {appState === "configuration" && (
               <div className={styles.content_container}>
                 <GameConfiguration
+                  key={gameMode} // force le remount à chaque changement de mode
                   gameMode={gameMode}
                   onStartGame={handleStartGame}
                 />

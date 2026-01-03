@@ -168,6 +168,11 @@ export function GamePlaying({
   }
   
   try {
+    // DEBUG : log du statut et de la ligne gagnante
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line no-console
+      console.log("[GamePlaying] status:", game.status, "winningLine:", game.winningLine)
+    }
     const getPlayerName = (symbol: Symbol): string => {
       if (config.gameMode === "VsComputer") {
         return symbol === config.chosenSymbol ? config.player1Name : "EasiBot"

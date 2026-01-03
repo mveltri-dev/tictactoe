@@ -636,6 +636,7 @@ public class GameService
         {
             game.Status = computerPlayer.Symbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
             game.WinnerId = computerPlayer.Id;
+            game.SetWinningLine(winningLine);
         }
         // 6. Vérifier s'il y a match nul
         else if (IsBoardFull(game))
