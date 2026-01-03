@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useToast } from "../components/organisms/toast/toast"
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
 import { useGame } from "../hooks"
@@ -31,6 +32,7 @@ const mapLocalToApiMode = (localMode: GameMode): GameModeAPI => {
 }
 
 export function App() {
+  const { showError, showSuccess, showInfo } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const [isSoundEnabled, setIsSoundEnabled] = useState(true)
@@ -72,6 +74,13 @@ export function App() {
     }
   }, [location.pathname, game, loadGame])
 
+  // Afficher un toast d'erreur global si une erreur d'app survient
+  useEffect(() => {
+    if (appState === "error" && error) {
+      showError(error)
+    }
+  }, [appState, error, showError])
+
   // Si on est sur /game/:id mais qu'il y a une erreur de chargement, rediriger vers la configuration
   useEffect(() => {
     if (location.pathname.startsWith('/game/') && !game && appState === "error") {
@@ -110,9 +119,30 @@ export function App() {
   }
 
   const handleLoginSubmit = async (username: string, password: string) => {
-    const response = await authService.login(username, password)
-    setToken(response.token)
-    navigate('/lobby')
+    try {
+      const response = await authService.login(username, password)
+      setToken(response.token)
+      showSuccess("Connexion réussie !")
+      navigate('/lobby')
+    } catch (err: any) {
+      // Traduction des erreurs techniques en messages utilisateurs
+      let message = "Erreur de connexion. Veuillez réessayer."
+      if (err && typeof err === 'object') {
+        const raw = err.error || err.message || (typeof err === 'string' ? err : '')
+        if (typeof raw === 'string') {
+          if (raw.toLowerCase().includes('incorrect')) {
+            message = "Email ou mot de passe incorrect."
+          } else if (raw.toLowerCase().includes('network')) {
+            message = "Impossible de se connecter au serveur. Vérifiez votre connexion internet."
+          } else if (raw.toLowerCase().includes('timeout')) {
+            message = "Le serveur met trop de temps à répondre. Réessayez plus tard."
+          } else if (raw.toLowerCase().includes('jwt')) {
+            message = "Session expirée. Veuillez vous reconnecter."
+          }
+        }
+      }
+      showError(message)
+    }
   }
 
   const handleLogin = (userToken: string) => {
@@ -124,7 +154,9 @@ export function App() {
   const handleLogout = () => {
     authService.logout()
     setToken(null)
-    navigate('/')
+    setGameMode('VsPlayerOnline')
+    showInfo("Déconnexion réussie.")
+    navigate('/login')
   }
 
   const handleGameFound = (gameId: string, opponentUsername: string, yourSymbol: "X" | "O") => {
@@ -196,7 +228,7 @@ export function App() {
       onLanguageChange={setLanguage}
     >
       {/* Affichage du jeu pour les parties en cours */}
-      {game && config && (appState === "playing" || (appState === "finished" && location.pathname.startsWith('/game/'))) && appState !== "loading" && location.pathname.startsWith('/game/') && (
+      {game && config && (appState === "playing" || (appState === "finished" && location.pathname.startsWith('/game/'))) && location.pathname.startsWith('/game/') && (
         <div className={styles.content_container}>
           <GamePlaying
             game={game}
@@ -207,6 +239,7 @@ export function App() {
             onCellClick={handleCellClick}
             onNewGame={handleNewGame}
             onRestart={handleRestart}
+            modeLabel={config?.gameMode || gameMode}
           />
         </div>
       )}
@@ -248,16 +281,8 @@ export function App() {
             )}
 
             {appState === "error" && !game && error && (
-              <div className={styles.error_container}>
-                <h2 className={styles.error_title}>Erreur</h2>
-                <p className={styles.error_message}>{error}</p>
-                <button 
-                  onClick={resetGame} 
-                  className={styles.button}
-                >
-                  Retour à la configuration
-                </button>
-              </div>
+              // L'affichage d'erreur sera remplacé par un toast
+              null
             )}
           </>
         } />
@@ -265,7 +290,7 @@ export function App() {
         {/* Page de login (uniquement pour le mode online) */}
         <Route path="/login" element={
           <div className={styles.content_container}>
-            <LoginForm onLogin={handleLoginSubmit} onClose={() => navigate('/')} />
+            <LoginForm onLogin={handleLoginSubmit} onClose={() => { setGameMode('VsComputer'); navigate('/'); }} />
           </div>
         } />
 
@@ -300,16 +325,8 @@ export function App() {
             )}
 
             {!game && appState === "error" && (
-              <div className={styles.error_container}>
-                <h2 className={styles["error_title--neutral"]}>Partie introuvable</h2>
-                <p className={styles.error_message}>Cette partie n'existe pas ou a été supprimée.</p>
-                <button 
-                  onClick={handleNewGame} 
-                  className={styles.button}
-                >
-                  Nouvelle partie
-                </button>
-              </div>
+              // L'affichage d'erreur sera remplacé par un toast
+              null
             )}
           </>
         } />
@@ -317,5 +334,6 @@ export function App() {
     </GameLayout>
   )
 }
+
 
 
