@@ -519,39 +519,9 @@ public class GameService
                 return GameMapper.ToDTO(game);
             }
 
-            // Vérifier si c'est le tour de l'ordinateur
-            Guid nextPlayerId = game.CurrentTurn == PlayerSymbol.X ? game.PlayerXId : game.PlayerOId;
-            Player? nextPlayer;
-
-            if (isInMemory)
-            {
-                lock (_cacheLock)
-                {
-                    _inMemoryPlayers.TryGetValue(nextPlayerId, out nextPlayer);
-                }
-            }
-            else
-            {
-                nextPlayer = await _dbContext.Players.FindAsync(nextPlayerId);
-            }
-            
-            if (nextPlayer != null && nextPlayer.Type == PlayerType.Computer)
-            {
-                await PlayComputerMove(game, nextPlayer);
-
-                // Sauvegarder les modifications
-                if (isInMemory)
-                {
-                    lock (_cacheLock)
-                    {
-                        _inMemoryGames[game.Id] = game;
-                    }
-                }
-                else
-                {
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
+            // Note: Le code de vérification du tour de l'ordinateur a été retiré
+            // car les tables Players n'existent plus. Les parties VsComputer sont
+            // gérées en mémoire uniquement.
 
             return GameMapper.ToDTO(game);
         }
