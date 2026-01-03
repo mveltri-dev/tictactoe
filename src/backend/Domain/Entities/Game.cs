@@ -69,6 +69,13 @@ public class Game
     public GameMode Mode { get; private set; }
 
     /// <summary>
+    /// Indique si l'invitation a été acceptée par le joueur invité (PlayerO).
+    /// Pour les modes VsComputer et VsPlayerLocal, ce champ est toujours true.
+    /// Pour VsPlayerOnline, il est false jusqu'à ce que PlayerO accepte l'invitation.
+    /// </summary>
+    public bool IsInvitationAccepted { get; set; }
+
+    /// <summary>
     /// Navigation property vers l'utilisateur X.
     /// </summary>
     public User? PlayerX { get; private set; }
@@ -110,5 +117,8 @@ public class Game
         WinningLine = null;
         CreatedAt = DateTime.UtcNow;
         Mode = mode;
+        // Pour les modes VsComputer et VsPlayerLocal, l'invitation est automatiquement acceptée
+        // Pour VsPlayerOnline, l'invitation doit être acceptée explicitement
+        IsInvitationAccepted = mode != GameMode.VsPlayerOnline;
     }
 }
