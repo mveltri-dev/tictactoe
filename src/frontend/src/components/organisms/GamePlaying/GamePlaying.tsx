@@ -1,9 +1,11 @@
 import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 import type { GameDTO, GameModeAPI, Symbol, AppState } from "../../../dtos"
 import { GameBoard } from "../GameBoard/GameBoard"
 import { StatusDisplay } from "../../molecules"
-import { ScoreBadge } from "../../atoms"
+import { ScoreBadge, GameButton } from "../../atoms"
 import { GameControls } from "../../molecules"
+import { Home, RotateCcw } from "lucide-react"
 import styles from "./GamePlaying.module.css"
 
 interface GameConfig {
@@ -51,12 +53,15 @@ export function GamePlaying({
   onNewGame,
   onRestart
 }: GamePlayingProps) {
-  const getPlayerName = (symbol: Symbol): string => {
-    if (config.gameMode === "VsComputer") {
-      return symbol === config.chosenSymbol ? config.player1Name : "EasiBot"
+  const navigate = useNavigate()
+  
+  try {
+    const getPlayerName = (symbol: Symbol): string => {
+      if (config.gameMode === "VsComputer") {
+        return symbol === config.chosenSymbol ? config.player1Name : "EasiBot"
+      }
+      return symbol === config.chosenSymbol ? config.player1Name : config.player2Name
     }
-    return symbol === config.chosenSymbol ? config.player1Name : config.player2Name
-  }
 
   const isLoading = appState === "loading"
   const isFinished = game.status !== "InProgress"
@@ -75,14 +80,20 @@ export function GamePlaying({
   const getPlayer2Label = () => config.gameMode === "VsComputer" ? "EasiBot" : config.player2Name
 
   // Pour StatusDisplay et ScoreBadge, les noms doivent correspondre aux symboles X et O
-  // En mode 1v1 local, X = player1, O = player2 (toujours)
-  // En mode IA, X ou O = player selon chosenSymbol
-  const playerXName = config.gameMode === "VsPlayerLocal" 
-    ? config.player1Name 
-    : (config.chosenSymbol === "X" ? config.player1Name : config.player2Name)
-  const playerOName = config.gameMode === "VsPlayerLocal" 
-    ? config.player2Name 
-    : (config.chosenSymbol === "X" ? config.player2Name : config.player1Name)
+  // En mode online: player1Name = playerXName, player2Name = playerOName (pas d'inversion)
+  // En mode local: X = player1, O = player2
+  // En mode IA: X ou O = player selon chosenSymbol
+  const playerXName = config.gameMode === "VsPlayerOnline"
+    ? config.player1Name  // player1Name est déjà playerXName
+    : config.gameMode === "VsPlayerLocal" 
+      ? config.player1Name 
+      : (config.chosenSymbol === "X" ? config.player1Name : config.player2Name)
+      
+  const playerOName = config.gameMode === "VsPlayerOnline"
+    ? config.player2Name  // player2Name est déjà playerOName
+    : config.gameMode === "VsPlayerLocal" 
+      ? config.player2Name 
+      : (config.chosenSymbol === "X" ? config.player2Name : config.player1Name)
 
   // Labels pour les ScoreBadges
   const scorePlayer1Label = config.gameMode === "VsComputer" ? "Vous" : playerXName
@@ -129,14 +140,14 @@ export function GamePlaying({
           transition={{ duration: 0.5 } as const}
         >
           <ScoreBadge 
-            label={scorePlayer1Label} 
-            value={player1Score} 
+            label={`${playerXName} (X)`}
+            value={scores.X} 
             variant="x" 
           />
           <ScoreBadge label="Nuls" value={scores.draws} variant="draw" />
           <ScoreBadge 
-            label={scorePlayer2Label} 
-            value={player2Score} 
+            label={`${playerOName} (O)`}
+            value={scores.O} 
             variant="o" 
           />
         </motion.div>
@@ -177,6 +188,36 @@ export function GamePlaying({
         />
       )}
 
+      {/* Contrôles de fin de partie pour les parties en ligne */}
+      {isFinished && config.gameMode === "VsPlayerOnline" && !isLoading && (
+        <motion.div
+          className={styles.onlineControls}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <GameButton 
+            onClick={() => navigate('/lobby')} 
+            variant="secondary"
+            className={styles.controlButton}
+          >
+            <Home size={20} />
+            Retour au lobby
+          </GameButton>
+          <GameButton 
+            onClick={() => {
+              // Retourner au lobby pour relancer une invitation
+              navigate('/lobby')
+            }} 
+            variant="primary"
+            className={styles.controlButton}
+          >
+            <RotateCcw size={20} />
+            Rejouer
+          </GameButton>
+        </motion.div>
+      )}
+
       {/* Message de chargement nouvelle partie */}
       {isLoading && (
         <motion.div
@@ -192,4 +233,13 @@ export function GamePlaying({
       )}
     </div>
   )
+  } catch (err) {
+    console.error("❌ ERREUR dans GamePlaying:", err)
+    return (
+      <div style={{ color: 'red', padding: '20px' }}>
+        <h2>Erreur dans GamePlaying</h2>
+        <pre>{String(err)}</pre>
+      </div>
+    )
+  }
 }
