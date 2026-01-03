@@ -1,5 +1,7 @@
 import { motion } from "framer-motion"
 import { SettingsMenu } from "@/components/organisms/SettingsMenu"
+import { GameModeSelector } from "@/components/organisms/GameModeSelector"
+import type { GameMode } from "@/dtos"
 import styles from "./GameHeader.module.css"
 
 interface GameHeaderProps {
@@ -7,9 +9,11 @@ interface GameHeaderProps {
   onSoundToggle: () => void
   language: string
   onLanguageChange: (lang: string) => void
+  currentMode: GameMode
+  onSelectMode: (mode: GameMode) => void
 }
 
-export function GameHeader({ isSoundEnabled, onSoundToggle, language, onLanguageChange }: GameHeaderProps) {
+export function GameHeader({ isSoundEnabled, onSoundToggle, language, onLanguageChange, currentMode, onSelectMode }: GameHeaderProps) {
   return (
     <motion.header
       className={styles.header}
@@ -21,12 +25,18 @@ export function GameHeader({ isSoundEnabled, onSoundToggle, language, onLanguage
         <h1 className={styles.title}>Tic-Tac-Toe</h1>
         <p className={styles.subtitle}>Propulsé par Easi</p>
       </div>
-      <SettingsMenu
-        isSoundEnabled={isSoundEnabled}
-        onSoundToggle={onSoundToggle}
-        language={language}
-        onLanguageChange={onLanguageChange}
-      />
+      <div className={styles.header_right}>
+        <SettingsMenu
+          isSoundEnabled={isSoundEnabled}
+          onSoundToggle={onSoundToggle}
+          language={language}
+          onLanguageChange={onLanguageChange}
+        />
+        <GameModeSelector
+          currentMode={currentMode}
+          onSelectMode={onSelectMode}
+        />
+      </div>
     </motion.header>
   )
 }

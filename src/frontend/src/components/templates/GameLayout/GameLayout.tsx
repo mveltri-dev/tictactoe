@@ -3,15 +3,19 @@ import { motion } from "framer-motion"
 import { GameHeader } from "@/components/organisms/GameHeader"
 import styles from "./GameLayout.module.css"
 
+import type { GameMode } from "@/dtos"
+
 interface GameLayoutProps {
   children: React.ReactNode
   isSoundEnabled: boolean
   onSoundToggle: () => void
   language: string
   onLanguageChange: (lang: string) => void
+  currentMode: GameMode
+  onSelectMode: (mode: GameMode) => void
 }
 
-export function GameLayout({ children, isSoundEnabled, onSoundToggle, language, onLanguageChange }: GameLayoutProps) {
+export function GameLayout({ children, isSoundEnabled, onSoundToggle, language, onLanguageChange, currentMode, onSelectMode }: GameLayoutProps) {
   return (
     <div className={styles.container}>
       <div className={styles.background} />
@@ -36,6 +40,8 @@ export function GameLayout({ children, isSoundEnabled, onSoundToggle, language, 
             onSoundToggle={onSoundToggle}
             language={language}
             onLanguageChange={onLanguageChange}
+            currentMode={currentMode}
+            onSelectMode={onSelectMode}
           />
           {children}
         </div>

@@ -7,6 +7,20 @@
   margin-bottom: 1.5rem;
 }
 
+.header_right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .header_right {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+}
+
 .title {
   font-size: 1.875rem;
   font-weight: 700;

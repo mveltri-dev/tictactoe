@@ -4,7 +4,7 @@ import { Routes, Route, useNavigate, useLocation } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
 import { useGame } from "../hooks"
 import { GameLayout } from "../components/templates"
-import { GameConfiguration, GamePlaying, GameModeSelector, OnlineHub } from "../components/organisms"
+import { GameConfiguration, GamePlaying, OnlineHub } from "../components/organisms"
 import { LoginForm } from "../components/molecules"
 import { authService } from "../services/authService"
 import type { CreateGameRequest, GameModeAPI } from "../dtos"
@@ -41,6 +41,7 @@ export function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
   // Flag pour ignorer le chargement de partie après un changement de mode
   const ignoreNextLoadRef = useRef(false)
+
 
   // Ajout : navigation automatique après auto-restart local
   type UseGameHook = typeof useGame
@@ -97,7 +98,7 @@ export function App() {
   }, [location.pathname, game, appState, navigate])
 
   // Quand on change de mode de jeu, rediriger vers la configuration
-  const handleGameModeChange = async (mode: GameMode) => {
+  const handleGameModeChange = (mode: GameMode) => {
     const apiMode = mapLocalToApiMode(mode)
     console.log('[handleGameModeChange] mode:', mode, '| apiMode:', apiMode)
     setGameMode(apiMode)
@@ -234,12 +235,19 @@ export function App() {
 
   const isInGame = !!game
 
+  // Pour passage à GameHeader
+  const onSelectMode = (mode: GameMode) => {
+    handleGameModeChange(mode)
+  }
+
   return (
     <GameLayout
       isSoundEnabled={isSoundEnabled}
       onSoundToggle={() => setIsSoundEnabled(!isSoundEnabled)}
       language={language}
       onLanguageChange={setLanguage}
+      currentMode={mapApiToLocalMode(gameMode)}
+      onSelectMode={onSelectMode}
     >
       {/* Affichage du jeu pour les parties en cours */}
       {game && config && (appState === "playing" || (appState === "finished" && location.pathname.startsWith('/game/'))) && location.pathname.startsWith('/game/') && (
@@ -265,14 +273,6 @@ export function App() {
           <p className={styles.loading__text}>Nouvelle partie...</p>
         </div>
       )}
-
-      {/* Game Mode Selector - Fixed Top Right */}
-      <div className={styles.mode_selector_container}>
-        <GameModeSelector
-          currentMode={mapApiToLocalMode(gameMode)}
-          onSelectMode={handleGameModeChange}
-        />
-      </div>
 
       <Routes>
         {/* Page d'accueil - Configuration */}
