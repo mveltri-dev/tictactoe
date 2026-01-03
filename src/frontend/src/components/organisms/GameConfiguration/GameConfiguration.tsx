@@ -94,7 +94,7 @@ export function GameConfiguration({ gameMode, onStartGame }: GameConfigurationPr
             player1Name: "Joueur 1",
             player2Name: "EasiBot",
             chosenSymbol: chosenSymbol,
-            gameMode
+            gameMode: "VsComputer"
           })} 
           variant="primary"
           className={styles.submit_button}
