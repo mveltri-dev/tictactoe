@@ -442,7 +442,7 @@ public class GameService
             {
                 game.Status = playerSymbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
                 game.WinnerId = request.PlayerId;
-                // Suppression de WinningLine
+                game.SetWinningLine(winningLine);
             }
             // 9. Vérifier s'il y a match nul
             else if (IsBoardFull(game))
