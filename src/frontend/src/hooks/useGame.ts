@@ -49,19 +49,27 @@ export function useGame(): UseGameReturn {
 
   // Écouter les mises à jour SignalR pour les parties multijoueur
   useEffect(() => {
-    if (game && config?.gameMode === "VsPlayerOnline") {
-      console.log("🎮 Configuration de l'écoute SignalR pour la partie:", game.id)
+    if (config?.gameMode === "VsPlayerOnline") {
+      console.log("🎮 Configuration de l'écoute SignalR pour les parties en ligne")
       
-      matchmakingService.onGameUpdated((updatedGameData: any) => {
-        console.log("🎮 Mise à jour reçue pour gameId:", updatedGameData.id)
-        if (updatedGameData.id === game.id) {
-          console.log("✅ Mise à jour de l'état du jeu:", updatedGameData)
-          setGame(updatedGameData)
-          setAppState("playing")
-        }
-      })
+      const handleGameUpdate = (updatedGameData: any) => {
+        console.log("🎮 Mise à jour reçue:", updatedGameData)
+        setGame(prevGame => {
+          // Ne mettre à jour que si c'est le même jeu
+          if (prevGame && updatedGameData.id === prevGame.id) {
+            console.log("✅ Mise à jour de l'état du jeu:", updatedGameData)
+            return updatedGameData
+          }
+          return prevGame
+        })
+        setAppState("playing")
+      }
+      
+      matchmakingService.onGameUpdated(handleGameUpdate)
+      
+      // Pas de cleanup car le callback est partagé globalement
     }
-  }, [game?.id, config?.gameMode])
+  }, [config?.gameMode])
 
   // Polling désactivé : SignalR gère les mises à jour en temps réel
   useEffect(() => {
@@ -91,20 +99,23 @@ export function useGame(): UseGameReturn {
       }
       previousGameStatusRef.current = game.status
 
-      // Auto-restart après 2 secondes
-      autoRestartTimeoutRef.current = setTimeout(() => {
-        if (config) {
-          setAppState("loading")
-          setTimeout(() => {
-            createGame({
-              player1Name: config.player1Name,
-              player2Name: config.player2Name,
-              chosenSymbol: config.chosenSymbol,
-              gameMode: config.gameMode
-            })
-          }, 500)
-        }
-      }, 2000)
+      // Auto-restart après 2 secondes SEULEMENT pour les modes locaux
+      // Les parties en ligne ne peuvent pas être recréées automatiquement
+      if (config?.gameMode !== "VsPlayerOnline") {
+        autoRestartTimeoutRef.current = setTimeout(() => {
+          if (config) {
+            setAppState("loading")
+            setTimeout(() => {
+              createGame({
+                player1Name: config.player1Name,
+                player2Name: config.player2Name,
+                chosenSymbol: config.chosenSymbol,
+                gameMode: config.gameMode
+              })
+            }, 500)
+          }
+        }, 2000)
+      }
     }
 
     return () => {
@@ -149,19 +160,52 @@ export function useGame(): UseGameReturn {
       setGame(loadedGame)
       
       // Créer une config basée sur les données de la partie
-      const playerXName = (loadedGame as any).playerXName || "Joueur X"
-      const playerOName = (loadedGame as any).playerOName || "Joueur O"
+      const playerXName = loadedGame.playerXName || "Joueur X"
+      const playerOName = loadedGame.playerOName || "Joueur O"
+      
+      // Déterminer le symbole du joueur actuel pour les parties online
+      let chosenSymbol: Symbol = "X" // Par défaut
+      if (loadedGame.mode === "VsPlayerOnline") {
+        // Pour les parties online, récupérer le userId du token
+        const { authService } = await import("../services/authService")
+        const userId = authService.getUserIdFromToken()
+        
+        if (userId) {
+          // Comparer avec playerXId et playerOId
+          if (userId === loadedGame.playerXId) {
+            chosenSymbol = "X"
+          } else if (userId === loadedGame.playerOId) {
+            chosenSymbol = "O"
+          }
+          console.log('👤 UserId:', userId, '→ Symbole:', chosenSymbol)
+        }
+        
+        // Initialiser SignalR si pas déjà connecté
+        try {
+          const connection = matchmakingService.getConnection()
+          if (!connection || connection.state !== "Connected") {
+            console.log("🔌 Initialisation de SignalR pour la partie en ligne...")
+            await matchmakingService.initializeConnection()
+            console.log("✅ SignalR connecté avec succès")
+          } else {
+            console.log("✅ SignalR déjà connecté")
+          }
+        } catch (signalrError) {
+          console.error("❌ Erreur lors de l'initialisation SignalR:", signalrError)
+          // Ne pas bloquer le chargement si SignalR échoue
+        }
+      }
       
       setConfig({
         player1Name: playerXName,
         player2Name: playerOName,
-        chosenSymbol: "X", // Par défaut
-        gameMode: loadedGame.mode
+        chosenSymbol,
+        gameMode: loadedGame.mode as GameModeAPI
       })
       previousGameStatusRef.current = loadedGame.status
-      setAppState("playing")
+      setAppState(loadedGame.status === "InProgress" ? "playing" : "finished")
     } catch (err) {
-      console.error('Erreur dans loadGame:', err)
+      console.error('❌ Erreur dans loadGame:', err)
       setError(err instanceof Error ? err.message : "Erreur lors du chargement de la partie")
       setAppState("error")
     }

@@ -63,9 +63,10 @@ export function App() {
     }
   }, [location.pathname, game, loadGame])
 
-  // Si on est sur /game/:id mais qu'il n'y a pas de partie, rediriger vers la configuration
+  // Si on est sur /game/:id mais qu'il y a une erreur de chargement, rediriger vers la configuration
   useEffect(() => {
-    if (location.pathname.startsWith('/game/') && !game && appState === "configuration") {
+    if (location.pathname.startsWith('/game/') && !game && appState === "error") {
+      console.log('⚠️ Redirection vers / car erreur de chargement de la partie')
       navigate('/')
     }
   }, [location.pathname, game, appState, navigate])
@@ -118,8 +119,10 @@ export function App() {
   }
 
   const handleGameFound = (gameId: string, opponentUsername: string, yourSymbol: "X" | "O") => {
-    console.log('Match trouvé !', { gameId, opponentUsername, yourSymbol })
+    console.log('🎯 Match trouvé !', { gameId, opponentUsername, yourSymbol })
+    console.log('🔄 Navigation vers /game/' + gameId)
     navigate(`/game/${gameId}`)
+    console.log('✅ Navigate appelé, pathname devrait changer')
   }
 
   const handleStartGameAuto = async (mode: GameModeAPI, symbol: "X" | "O") => {
@@ -144,10 +147,10 @@ export function App() {
   const handleCellClick = async (position: number) => {
     if (!game || !config) return
     
-    const playerId = game.currentTurn === config.chosenSymbol 
-      ? (config.chosenSymbol === "X" ? game.playerXId : game.playerOId)
-      : (game.currentTurn === "X" ? game.playerXId : game.playerOId)
+    // Utiliser le playerId correspondant au symbole actuel (currentTurn)
+    const playerId = game.currentTurn === "X" ? game.playerXId : game.playerOId
     
+    console.log('🎯 Coup joué:', { position, currentTurn: game.currentTurn, playerId })
     await makeMove(position, playerId)
   }
 
@@ -179,6 +182,22 @@ export function App() {
       language={language}
       onLanguageChange={setLanguage}
     >
+      {/* Affichage du jeu pour les parties en cours */}
+      {game && config && (appState === "playing" || appState === "finished" || appState === "loading") && location.pathname.startsWith('/game/') && (
+        <div className={styles.content_container}>
+          <GamePlaying
+            game={game}
+            config={config}
+            appState={appState}
+            error={error}
+            scores={scores}
+            onCellClick={handleCellClick}
+            onNewGame={handleNewGame}
+            onRestart={handleRestart}
+          />
+        </div>
+      )}
+      
       {/* Game Mode Selector - Fixed Top Right */}
       <div className={styles.mode_selector_container}>
         <GameModeSelector
@@ -256,21 +275,6 @@ export function App() {
               <div className={styles.loading_container}>
                 <div className={styles.loading_spinner} />
                 <p className={styles.loading_text}>Chargement de la partie...</p>
-              </div>
-            )}
-
-            {game && config && (appState === "playing" || appState === "finished" || appState === "loading") && (
-              <div className={styles.content_container}>
-                <GamePlaying
-                  game={game}
-                  config={config}
-                  appState={appState}
-                  error={error}
-                  scores={scores}
-                  onCellClick={handleCellClick}
-                  onNewGame={handleNewGame}
-                  onRestart={handleRestart}
-                />
               </div>
             )}
 

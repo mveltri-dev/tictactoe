@@ -15,6 +15,8 @@ public static class GameMapper
     /// <returns>GameDTO correspondant.</returns>
     public static GameDTO ToDTO(Game game)
     {
+        // Pour PlayerXName et PlayerOName, on utilise Username (User) si disponible
+        // Si c'est une partie locale, les noms seront null dans le DTO et devront être fournis par le frontend
         return new GameDTO
         {
             Id = game.Id,

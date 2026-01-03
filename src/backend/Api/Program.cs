@@ -51,7 +51,6 @@ builder.Services.AddDbContext<TicTacToeDbContext>(options =>
 // 3. Enregistrer les services
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IGameNotificationService, SignalRNotificationService>();
 
 // 4. Configurer l'authentification JWT
@@ -109,7 +108,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // Vite dev server
+        policy.WithOrigins(
+                "http://localhost:5173"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Nécessaire pour SignalR
@@ -157,9 +158,8 @@ using (var scope = app.Services.CreateScope())
         // Vérifier que les tables existent
         app.Logger.LogInformation("Vérification des tables...");
         var gamesCount = await dbContext.Games.CountAsync();
-        var playersCount = await dbContext.Players.CountAsync();
         var usersCount = await dbContext.Users.CountAsync();
-        app.Logger.LogInformation($"Tables vérifiées - Games: {gamesCount}, Players: {playersCount}, Users: {usersCount}");
+        app.Logger.LogInformation($"Tables vérifiées - Games: {gamesCount}, Users: {usersCount}");
     }
     catch (Exception ex)
     {
@@ -170,8 +170,16 @@ using (var scope = app.Services.CreateScope())
 
 // ===== CONFIGURATION DU PIPELINE (après Build) =====
 
-// 1. Activer CORS EN PREMIER (avant l'authentification pour SignalR)
+// 1. Activer CORS EN PREMIER (avant tout autre middleware)
 app.UseCors("AllowFrontend");
+
+// Middleware de logging pour déboguer (après CORS)
+app.Use(async (context, next) =>
+{
+    app.Logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path} from {context.Request.Headers.Origin}");
+    await next();
+    app.Logger.LogInformation($"Response: {context.Response.StatusCode}");
+});
 
 // 2. Activer Swagger 
 app.UseSwagger();

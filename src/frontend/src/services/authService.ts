@@ -27,6 +27,25 @@ class AuthService {
     return !!this.token
   }
 
+  getUserIdFromToken(): string | null {
+    if (!this.token) return null
+    
+    try {
+      // Décoder le JWT (format: header.payload.signature)
+      const parts = this.token.split('.')
+      if (parts.length !== 3) return null
+      
+      // Décoder la partie payload (base64)
+      const payload = JSON.parse(atob(parts[1]))
+      
+      // Le userId est dans la claim "sub" ou "nameid"
+      return payload.sub || payload.nameid || payload.userId || null
+    } catch (error) {
+      console.error('Erreur lors du décodage du token:', error)
+      return null
+    }
+  }
+
   async register(username: string, email: string, password: string): Promise<LoginResponse> {
     const response = await fetch(`${BASE_URL}/api/auth/register`, {
       method: 'POST',

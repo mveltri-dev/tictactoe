@@ -37,6 +37,9 @@ class MatchmakingService {
   private onInvitationDeclinedCallback: ((data: InvitationDeclinedData) => void) | null = null
   private onInvitationAcceptedCallback: ((data: InvitationAcceptedData) => void) | null = null
   private onGameUpdatedCallback: ((gameData: any) => void) | null = null
+  private onRematchRequestCallback: ((data: any) => void) | null = null
+  private onRematchAcceptedCallback: ((data: any) => void) | null = null
+  private onRematchDeclinedCallback: ((data: any) => void) | null = null
 
   getConnection(): signalR.HubConnection | null {
     return this.connection
@@ -93,6 +96,27 @@ class MatchmakingService {
       }
     })
 
+    this.connection.on("RematchRequest", (data: any) => {
+      console.log("🔄 Demande de rematch reçue:", data)
+      if (this.onRematchRequestCallback) {
+        this.onRematchRequestCallback(data)
+      }
+    })
+
+    this.connection.on("RematchAccepted", (data: any) => {
+      console.log("✅ Rematch accepté:", data)
+      if (this.onRematchAcceptedCallback) {
+        this.onRematchAcceptedCallback(data)
+      }
+    })
+
+    this.connection.on("RematchDeclined", (data: any) => {
+      console.log("❌ Rematch refusé:", data)
+      if (this.onRematchDeclinedCallback) {
+        this.onRematchDeclinedCallback(data)
+      }
+    })
+
     try {
       await this.connection.start()
       console.log("SignalR connecté")
@@ -110,6 +134,18 @@ class MatchmakingService {
     this.connection = null
   }
 
+
+  onRematchRequest(callback: (data: any) => void): void {
+    this.onRematchRequestCallback = callback
+  }
+
+  onRematchAccepted(callback: (data: any) => void): void {
+    this.onRematchAcceptedCallback = callback
+  }
+
+  onRematchDeclined(callback: (data: any) => void): void {
+    this.onRematchDeclinedCallback = callback
+  }
   onMatchFound(callback: (data: MatchFoundData) => void): void {
     this.onMatchFoundCallback = callback
   }
@@ -197,6 +233,56 @@ class MatchmakingService {
     }
 
     return response.json()
+  }
+
+  async requestRematch(opponentId: string): Promise<{ gameId: string }> {
+    const token = authService.getToken()
+    const response = await fetch(`${BASE_URL}/api/matchmaking/rematch/${opponentId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erreur lors de la demande de rematch')
+    }
+
+    return response.json()
+  }
+
+  async acceptRematch(gameId: string): Promise<void> {
+    const token = authService.getToken()
+    const response = await fetch(`${BASE_URL}/api/matchmaking/rematch/accept/${gameId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erreur lors de l\'acceptation du rematch')
+    }
+  }
+
+  async declineRematch(gameId: string): Promise<void> {
+    const token = authService.getToken()
+    const response = await fetch(`${BASE_URL}/api/matchmaking/rematch/decline/${gameId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erreur lors du refus du rematch')
+    }
   }
 
   async getPendingInvitations(): Promise<Array<{

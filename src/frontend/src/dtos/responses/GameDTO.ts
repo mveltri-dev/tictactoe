@@ -7,6 +7,8 @@ export interface GameDTO {
   board: (string | null)[]
   playerXId: string
   playerOId: string
+  playerXName?: string | null
+  playerOName?: string | null
   currentTurn: Symbol
   status: GameStatus
   winnerId: string | null
