@@ -90,8 +90,8 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
   useEffect(() => {
     if (game && game.status !== "InProgress") {
       setAppState("finished")
-      // Mettre à jour les scores SEULEMENT si le statut vient de changer
-      if (previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null) {
+      // Mettre à jour les scores SEULEMENT si le statut vient de changer ET en mode local/IA
+      if ((config?.gameMode === "VsComputer" || config?.gameMode === "VsPlayerLocal") && (previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null)) {
         if (game.status === "XWins") {
           setScores(prev => ({ ...prev, X: prev.X + 1 }))
         } else if (game.status === "OWins") {
@@ -182,8 +182,13 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
       setGame(loadedGame)
       
       // Créer une config basée sur les données de la partie
-      const playerXName = loadedGame.playerXName || "Joueur X"
-      const playerOName = loadedGame.playerOName || "Joueur O"
+      // Pour le mode online, ne jamais fallback sur 'Joueur X' ou 'Joueur O' si le nom n'est pas fourni
+      const playerXName = loadedGame.mode === "VsPlayerOnline"
+        ? (loadedGame.playerXName || "?")
+        : (loadedGame.playerXName || "Joueur X")
+      const playerOName = loadedGame.mode === "VsPlayerOnline"
+        ? (loadedGame.playerOName || "?")
+        : (loadedGame.playerOName || "Joueur O")
       
       // Déterminer le symbole du joueur actuel pour les parties online
       let chosenSymbol: Symbol = "X" // Par défaut
