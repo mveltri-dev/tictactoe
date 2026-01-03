@@ -22,6 +22,41 @@ namespace Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Domain.Entities.Friendship", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReceiverId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("RequesterId", "ReceiverId")
+                        .IsUnique();
+
+                    b.ToTable("Friendships");
+                });
+
             modelBuilder.Entity("Domain.Entities.Game", b =>
                 {
                     b.Property<Guid>("Id")
@@ -41,6 +76,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("Height")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsInvitationAccepted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Mode")
                         .IsRequired()
@@ -182,6 +220,25 @@ namespace Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Friendship", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.User", "Requester")
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Requester");
                 });
 
             modelBuilder.Entity("Domain.Entities.Game", b =>

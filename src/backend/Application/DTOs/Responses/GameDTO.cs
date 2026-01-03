@@ -28,6 +28,16 @@ public class GameDTO
     public Guid PlayerOId { get; set; }
 
     /// <summary>
+    /// Nom du joueur X (pour affichage).
+    /// </summary>
+    public string? PlayerXName { get; set; }
+
+    /// <summary>
+    /// Nom du joueur O (pour affichage).
+    /// </summary>
+    public string? PlayerOName { get; set; }
+
+    /// <summary>
     /// Symbole du joueur dont c'est le tour ("X" ou "O").
     /// </summary>
     public required string CurrentTurn { get; set; }

@@ -27,7 +27,9 @@ public class GameService
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
     private static readonly TimeSpan GameExpiration = TimeSpan.FromHours(24);
 
-    public GameService(TicTacToeDbContext dbContext, IGameNotificationService? notificationService = null)
+    public GameService(
+        TicTacToeDbContext dbContext, 
+        IGameNotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _notificationService = notificationService;
@@ -293,7 +295,10 @@ public class GameService
             }
 
             // Sinon, chercher en DB
-            game = await _dbContext.Games.FindAsync(gameId);
+            game = await _dbContext.Games
+                .Include(g => g.PlayerX)
+                .Include(g => g.PlayerO)
+                .FirstOrDefaultAsync(g => g.Id == gameId);
             
             if (game == null)
             {
@@ -430,29 +435,7 @@ public class GameService
 
             var gameDto = GameMapper.ToDTO(game);
 
-            // 12. Notifier via SignalR pour les parties online
-            if (game.Mode == GameMode.VsPlayerOnline && _notificationService != null)
-            {
-                var currentSymbol = player.Symbol.ToString();
-                var nextSymbol = game.Status == GameStatus.InProgress ? game.CurrentTurn.ToString() : "none";
-                
-                await _notificationService.NotifyMovePlayed(
-                    game.Id.ToString(), 
-                    request.Position, 
-                    currentSymbol, 
-                    nextSymbol);
-                
-                if (game.Status != GameStatus.InProgress)
-                {
-                    var isDraw = game.Status == GameStatus.Draw;
-                    await _notificationService.NotifyGameEnded(
-                        game.Id.ToString(), 
-                        game.WinnerId?.ToString(), 
-                        isDraw);
-                }
-            }
-
-            // 13. Retourner l'état mis à jour (le coup de l'IA sera géré côté frontend)
+            // Retourner le DTO (SignalR sera géré par le contrôleur)
             return gameDto;
         }
         catch (KeyNotFoundException)
