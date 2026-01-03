@@ -162,6 +162,12 @@ public class GameService
                 throw new ArgumentException($"Mode de jeu invalide : {request.GameMode}");
             }
 
+            // Les parties en ligne doivent être créées via le matchmaking, pas via CreateGame
+            if (gameMode == GameMode.VsPlayerOnline)
+            {
+                throw new ArgumentException("Les parties en ligne doivent être créées via le matchmaking. Utilisez l'endpoint /api/matchmaking/join ou /api/matchmaking/invite.");
+            }
+
             if (!Enum.TryParse<PlayerSymbol>(request.ChosenSymbol, out PlayerSymbol player1Symbol))
             {
                 throw new ArgumentException($"Symbole invalide : {request.ChosenSymbol}");
@@ -219,8 +225,8 @@ public class GameService
             if (RequiresDatabasePersistence(gameMode))
             {
                 // Parties online → PostgreSQL
-                await _dbContext.Players.AddAsync(player1);
-                await _dbContext.Players.AddAsync(player2);
+                // NOTE: Pour les parties online, playerX.Id et playerO.Id sont des User.Id existants
+                // On ne crée PAS de Player entities pour les parties online
                 await _dbContext.Games.AddAsync(game);
                 await _dbContext.SaveChangesAsync();
             }
@@ -284,17 +290,28 @@ public class GameService
     {
         try
         {
-            // Chercher d'abord en mémoire
+            Console.WriteLine($"🔍 GetGame appelé pour gameId: {gameId}");
+            
+            // Chercher d'abord en mémoire (parties locales: VsComputer, VsPlayerLocal)
             Game? game;
             lock (_cacheLock)
             {
-                if (_inMemoryGames.TryGetValue(gameId, out game))
-                {
-                    return GameMapper.ToDTO(game);
-                }
+                _inMemoryGames.TryGetValue(gameId, out game);
             }
 
-            // Sinon, chercher en DB
+            // Si trouvé en mémoire, c'est une partie locale (pas en DB)
+            // Les parties locales n'ont pas de User associé, PlayerXName et PlayerOName seront null
+            if (game != null)
+            {
+                Console.WriteLine($"✅ Partie trouvée en mémoire: Mode={game.Mode}, Status={game.Status}");
+                Console.WriteLine($"⚠️  Partie locale: PlayerXName et PlayerOName seront null dans le DTO (géré par le frontend)");
+                
+                return GameMapper.ToDTO(game);
+            }
+
+            Console.WriteLine($"🔎 Partie non trouvée en mémoire, recherche en DB...");
+            
+            // Sinon, chercher en DB (parties online: VsPlayerOnline)
             game = await _dbContext.Games
                 .Include(g => g.PlayerX)
                 .Include(g => g.PlayerO)
@@ -302,8 +319,11 @@ public class GameService
             
             if (game == null)
             {
+                Console.WriteLine($"❌ Partie introuvable avec l'ID : {gameId}");
                 throw new KeyNotFoundException($"Partie introuvable avec l'ID : {gameId}");
             }
+            
+            Console.WriteLine($"✅ Partie trouvée en DB: Mode={game.Mode}, Status={game.Status}, PlayerX={game.PlayerX?.Username ?? "null"}, PlayerO={game.PlayerO?.Username ?? "null"}");
 
             return GameMapper.ToDTO(game);
         }
@@ -313,6 +333,7 @@ public class GameService
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"❌ Erreur dans GetGame: {ex.Message}");
             throw new InvalidOperationException($"Erreur lors de la récupération de la partie : {ex.Message}", ex);
         }
     }
@@ -353,10 +374,12 @@ public class GameService
                 throw new KeyNotFoundException($"Partie introuvable avec l'ID : {request.GameId}");
             }
 
-            // 3. Récupérer le joueur (mémoire ou DB)
-            Player? player;
+            // 3. Valider le joueur selon le mode
+            PlayerSymbol playerSymbol;
             if (isInMemory)
             {
+                // Parties locales : chercher le Player en mémoire
+                Player? player;
                 lock (_cacheLock)
                 {
                     if (!_inMemoryPlayers.TryGetValue(request.PlayerId, out player))
@@ -364,13 +387,22 @@ public class GameService
                         throw new KeyNotFoundException($"Joueur introuvable avec l'ID : {request.PlayerId}");
                     }
                 }
+                playerSymbol = player.Symbol;
             }
             else
             {
-                player = await _dbContext.Players.FindAsync(request.PlayerId);
-                if (player == null)
+                // Parties online : valider que le playerId correspond à playerXId ou playerOId
+                if (request.PlayerId == game.PlayerXId)
                 {
-                    throw new KeyNotFoundException($"Joueur introuvable avec l'ID : {request.PlayerId}");
+                    playerSymbol = PlayerSymbol.X;
+                }
+                else if (request.PlayerId == game.PlayerOId)
+                {
+                    playerSymbol = PlayerSymbol.O;
+                }
+                else
+                {
+                    throw new KeyNotFoundException($"Le joueur {request.PlayerId} ne participe pas à cette partie.");
                 }
             }
 
@@ -381,9 +413,9 @@ public class GameService
             }
 
             // 5. Vérifier que c'est bien le tour du joueur
-            if (player.Symbol != game.CurrentTurn)
+            if (playerSymbol != game.CurrentTurn)
             {
-                throw new InvalidOperationException($"Ce n'est pas le tour de {player.Name}. Tour actuel : {game.CurrentTurn}");
+                throw new InvalidOperationException($"Ce n'est pas le tour du joueur {playerSymbol}. Tour actuel : {game.CurrentTurn}");
             }
 
             // 6. Vérifier que la position est valide et libre
@@ -399,14 +431,14 @@ public class GameService
             }
 
             // 7. Placer le symbole sur le plateau
-            game.Board[request.Position] = player.Symbol;
+            game.Board[request.Position] = playerSymbol;
 
             // 8. Vérifier s'il y a un gagnant
-            var winningLine = CheckWinner(game, player.Symbol);
+            var winningLine = CheckWinner(game, playerSymbol);
             if (winningLine != null)
             {
-                game.Status = player.Symbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
-                game.WinnerId = player.Id;
+                game.Status = playerSymbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
+                game.WinnerId = request.PlayerId;
                 game.WinningLine = winningLine;
             }
             // 9. Vérifier s'il y a match nul
