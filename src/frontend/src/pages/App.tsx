@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+// Le fichier global.d.ts est automatiquement inclus par TypeScript s'il est dans src/types ou référencé dans tsconfig.json
 import { useToast } from "../components/organisms/toast/toast"
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
@@ -32,6 +33,21 @@ const mapLocalToApiMode = (localMode: GameMode): GameModeAPI => {
 }
 
 export function App() {
+    // Listener pour forcer le mode de jeu à VsComputer ou VsPlayerLocal (utilisé lors de l'abandon)
+    useEffect(() => {
+      const handler = (e: any) => {
+        if (e.detail === "VsComputer") {
+          setGameMode("VsComputer")
+          navigate("/")
+        }
+        if (e.detail === "VsPlayerLocal") {
+          setGameMode("VsPlayerLocal")
+          navigate("/")
+        }
+      }
+      window.addEventListener("forceGameMode", handler)
+      return () => window.removeEventListener("forceGameMode", handler)
+    }, [])
   const { showError, showSuccess, showInfo } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -77,6 +93,11 @@ export function App() {
       const gameId = match[1]
       // Ne charger que si on n'a pas déjà cette partie
       if (!game || game.id !== gameId) {
+    // Expose handleGameModeChange pour appel direct
+    window.handleGameModeChange = (mode: string) => {
+      // On convertit le string en GameMode si besoin
+      handleGameModeChange(mode as any)
+    }
         loadGame(gameId)
       }
     }
@@ -169,9 +190,9 @@ export function App() {
   const handleLogout = () => {
     authService.logout()
     setToken(null)
-    setGameMode('VsPlayerOnline')
+    setGameMode('VsComputer')
     showInfo("Déconnexion réussie.")
-    navigate('/login')
+    navigate('/')
   }
 
   const handleGameFound = (gameId: string, opponentUsername: string, yourSymbol: "X" | "O") => {
@@ -186,16 +207,7 @@ export function App() {
       player1Name: "Joueur 1",
       player2Name: mode === "VsComputer" ? "EasiBot" : "Joueur 2",
       chosenSymbol: symbol,
-      gameMode: mode
-    })
-    if (newGame) {
-      navigate(`/game/${newGame.id}`)
-    }
-  }
-
-  const handleStartGame = async (request: CreateGameRequest) => {
-    const newGame = await createGame({
-      ...request,
+      gameMode: mode,
       width: 3,
       height: 3
     })
@@ -204,28 +216,49 @@ export function App() {
     }
   }
 
+  const handleStartGame = async (request: CreateGameRequest) => {
+    const newGame = await createGame({
+      player1Name: request.player1Name || "Joueur 1",
+      player2Name: request.player2Name || (request.gameMode === "VsComputer" ? "EasiBot" : "Joueur 2"),
+      chosenSymbol: request.chosenSymbol,
+      gameMode: request.gameMode,
+      width: request.width ?? 3,
+      height: request.height ?? 3
+    })
+    if (newGame) {
+      navigate(`/game/${newGame.id}`)
+    }
+  }
+
+
   const handleCellClick = async (position: number) => {
     if (!game || !config) return
-    
     // Utiliser le playerId correspondant au symbole actuel (currentTurn)
     const playerId = game.currentTurn === "X" ? game.playerXId : game.playerOId
-    
     console.log('🎯 Coup joué:', { position, currentTurn: game.currentTurn, playerId })
     await makeMove(position, playerId)
   }
 
+  // Nouvelle version : reset total et navigation, pour éviter tout état incohérent
   const handleNewGame = () => {
+    console.log('[DEBUG][App] handleNewGame appelé')
+    ignoreNextLoadRef.current = true;
     resetGame()
-    navigate('/')
+    setTimeout(() => {
+      console.log('[DEBUG][App] navigation vers / après resetGame')
+      navigate('/')
+    }, 0)
   }
 
   const handleRestart = async () => {
     if (config) {
       const newGame = await createGame({
-        player1Name: config.player1Name,
-        player2Name: config.player2Name,
+        player1Name: config.player1Name || "Joueur 1",
+        player2Name: config.player2Name || (config.gameMode === "VsComputer" ? "EasiBot" : "Joueur 2"),
         chosenSymbol: config.chosenSymbol,
-        gameMode: config.gameMode
+        gameMode: config.gameMode,
+        width: config.width ?? 3,
+        height: config.height ?? 3
       })
       if (newGame) {
         navigate(`/game/${newGame.id}`)
@@ -285,15 +318,21 @@ export function App() {
               </div>
             )}
 
-            {appState === "configuration" && (
-              <div className={styles.content_container}>
-                <GameConfiguration
-                  key={gameMode} // force le remount à chaque changement de mode
-                  gameMode={gameMode}
-                  onStartGame={handleStartGame}
-                />
-              </div>
-            )}
+            {(() => {
+              console.log('[DEBUG][App] render, appState:', appState, 'game:', game, 'config:', config, 'gameMode:', gameMode)
+              if (appState === "configuration") {
+                return (
+                  <div className={styles.content_container}>
+                    <GameConfiguration
+                      key={gameMode} // force le remount à chaque changement de mode
+                      gameMode={gameMode}
+                      onStartGame={handleStartGame}
+                    />
+                  </div>
+                )
+              }
+              return null
+            })()}
 
             {appState === "error" && !game && error && (
               // L'affichage d'erreur sera remplacé par un toast
