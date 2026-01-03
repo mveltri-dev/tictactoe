@@ -15,4 +15,6 @@ export interface GameDTO {
   winningLine: number[] | null
   createdAt: string
   mode: string
+  width: number
+  height: number
 }

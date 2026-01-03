@@ -295,6 +295,8 @@ export function GamePlaying({
           onCellClick={onCellClick}
           disabled={isLoading || isFinished || !canClick}
           winningLine={game.winningLine || []}
+          rows={game.height}
+          cols={game.width}
         />
       )}
 

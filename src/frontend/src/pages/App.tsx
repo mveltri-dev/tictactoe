@@ -147,7 +147,11 @@ export function App() {
   }
 
   const handleStartGame = async (request: CreateGameRequest) => {
-    const newGame = await createGame(request)
+    const newGame = await createGame({
+      ...request,
+      width: 4,
+      height: 5
+    })
     if (newGame) {
       navigate(`/game/${newGame.id}`)
     }

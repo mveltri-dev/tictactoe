@@ -8,6 +8,8 @@ interface GameConfig {
   player2Name: string
   chosenSymbol: Symbol
   gameMode: GameModeAPI
+  width: number
+  height: number
 }
 
 interface Scores {
@@ -103,12 +105,14 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
       if (config?.gameMode !== "VsPlayerOnline") {
         autoRestartTimeoutRef.current = setTimeout(async () => {
           if (config) {
-            // Pas de setAppState("loading") ni setGame(null) ici !
+            // Inclure la taille du plateau pour la nouvelle partie
             const newGame = await createGame({
               player1Name: config.player1Name,
               player2Name: config.player2Name,
               chosenSymbol: config.chosenSymbol,
-              gameMode: config.gameMode
+              gameMode: config.gameMode,
+              width: config.width,
+              height: config.height
             })
             if (newGame && onAutoRestarted) {
               onAutoRestarted(newGame.id)
@@ -126,15 +130,15 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
 
   const createGame = useCallback(async (request: CreateGameRequest): Promise<GameDTO | null> => {
     try {
-      // Ne pas passer par 'loading' pour les parties locales afin d'éviter le flash
       setError(null)
-      // Pour les parties locales, garder la config locale (noms, symbole)
       // Toujours initialiser la config locale (pour toutes les parties)
       const newConfig: GameConfig = {
         player1Name: request.player1Name || "Joueur 1",
         player2Name: request.player2Name || (request.gameMode === "VsComputer" ? "EasiBot" : "Joueur 2"),
         chosenSymbol: request.chosenSymbol,
-        gameMode: request.gameMode
+        gameMode: request.gameMode,
+        width: request.width ?? 3,
+        height: request.height ?? 3
       }
       setConfig(newConfig)
       if (request.gameMode === "VsPlayerOnline") {
@@ -216,13 +220,20 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
       
       // Pour les parties locales, NE PAS écraser la config locale
       if (loadedGame.mode === "VsComputer" || loadedGame.mode === "VsPlayerLocal") {
-        // Ne rien faire, garder la config locale
+        // Mettre à jour la config locale AVEC la taille du plateau du backend
+        setConfig((prev) => ({
+          ...prev!,
+          width: loadedGame.width ?? 3,
+          height: loadedGame.height ?? 3
+        }))
       } else {
         setConfig({
           player1Name: playerXName,
           player2Name: playerOName,
           chosenSymbol,
-          gameMode: loadedGame.mode as GameModeAPI
+          gameMode: loadedGame.mode as GameModeAPI,
+          width: loadedGame.width ?? 3,
+          height: loadedGame.height ?? 3
         })
       }
       previousGameStatusRef.current = loadedGame.status
