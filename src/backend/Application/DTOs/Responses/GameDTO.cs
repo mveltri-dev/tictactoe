@@ -66,4 +66,14 @@ public class GameDTO
     /// Mode de jeu : "VsComputer", "VsPlayerLocal" ou "VsPlayerOnline".
     /// </summary>
     public required string Mode { get; set; }
+
+    /// <summary>
+    /// Largeur du plateau (nombre de colonnes).
+    /// </summary>
+    public int Width { get; set; }
+
+    /// <summary>
+    /// Hauteur du plateau (nombre de lignes).
+    /// </summary>
+    public int Height { get; set; }
 }

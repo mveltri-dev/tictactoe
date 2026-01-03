@@ -50,10 +50,8 @@ public class GameController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            // Créer la partie via le service
+            // Créer la partie via le service (dimensions dynamiques prises en compte)
             GameDTO game = await _gameService.CreateGame(request);
-
-            // Retourner 200 OK avec le DTO
             return Ok(game);
         }
         catch (ArgumentNullException ex)
