@@ -18,7 +18,33 @@ interface UserStats {
   rank: number
 }
 
+export interface LeaderboardEntry {
+  id: string
+  username: string
+  score: number
+  wins: number
+  gamesPlayed: number
+  winRate: number
+  rank: number
+  losses?: number
+}
+
 class UserService {
+    async getLeaderboard(): Promise<LeaderboardEntry[]> {
+      const token = authService.getToken()
+      const response = await fetch(`${BASE_URL}/api/user/leaderboard`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération du classement')
+      }
+
+      return response.json()
+    }
   async getProfile(): Promise<UserProfile> {
     const token = authService.getToken()
     const response = await fetch(`${BASE_URL}/api/user/profile`, {

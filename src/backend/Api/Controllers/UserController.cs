@@ -4,19 +4,84 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Infrastructure.Database;
 
-namespace Api.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-[Authorize]
-public class UserController : ControllerBase
+namespace Api.Controllers
 {
-    private readonly TicTacToeDbContext _context;
-
-    public UserController(TicTacToeDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class UserController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly TicTacToeDbContext _context;
+
+        public UserController(TicTacToeDbContext context)
+        {
+            _context = context;
+        }
+
+
+        [HttpGet("leaderboard")]
+        public async Task<IActionResult> GetLeaderboard()
+        {
+            // Récupérer tous les utilisateurs
+            var allUsers = await _context.Users.ToListAsync();
+            var leaderboard = new List<object>();
+
+            foreach (var u in allUsers)
+            {
+                var userGames = await _context.Games
+                    .Where(g => (g.PlayerXId == u.Id || g.PlayerOId == u.Id) &&
+                               (g.Status == Domain.Enums.GameStatus.XWins ||
+                                g.Status == Domain.Enums.GameStatus.OWins ||
+                                g.Status == Domain.Enums.GameStatus.Draw))
+                    .ToListAsync();
+
+                var wins = userGames.Count(g =>
+                    (g.PlayerXId == u.Id && g.Status == Domain.Enums.GameStatus.XWins) ||
+                    (g.PlayerOId == u.Id && g.Status == Domain.Enums.GameStatus.OWins)
+                );
+                var losses = userGames.Count(g =>
+                    (g.PlayerXId == u.Id && g.Status == Domain.Enums.GameStatus.OWins) ||
+                    (g.PlayerOId == u.Id && g.Status == Domain.Enums.GameStatus.XWins)
+                );
+                var draws = userGames.Count(g => g.Status == Domain.Enums.GameStatus.Draw);
+                var gamesPlayed = userGames.Count;
+                var winRate = gamesPlayed > 0 ? (double)wins / gamesPlayed * 100 : 0;
+                var score = (wins * 3) + (draws * 1) - (losses * 1);
+
+                leaderboard.Add(new
+                {
+                    id = u.Id,
+                    username = u.Username,
+                    score,
+                    wins,
+                    gamesPlayed,
+                    winRate,
+                    // Le rang sera attribué après le tri
+                });
+            }
+
+            // Trier par nombre de parties (joueurs actifs d'abord), puis par score décroissant
+            var sorted = leaderboard
+                .OrderByDescending(x => ((dynamic)x).gamesPlayed > 0 ? 1 : 0)
+                .ThenByDescending(x => ((dynamic)x).score)
+                .ThenByDescending(x => ((dynamic)x).gamesPlayed > 0 ? (double)((dynamic)x).score / ((dynamic)x).gamesPlayed : 0)
+                .ToList();
+
+            // Ajouter le rang
+            var withRank = sorted.Select((x, i) => new
+            {
+                ((dynamic)x).id,
+                ((dynamic)x).username,
+                ((dynamic)x).score,
+                ((dynamic)x).wins,
+                ((dynamic)x).gamesPlayed,
+                ((dynamic)x).winRate,
+                rank = i + 1
+            });
+
+            return Ok(withRank);
+        }
+
 
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
@@ -160,6 +225,7 @@ public class UserController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+
         return Ok(new
         {
             id = user.Id,
@@ -173,4 +239,6 @@ public class UpdateProfileRequest
 {
     public string? Username { get; set; }
     public string? Email { get; set; }
+}
+
 }

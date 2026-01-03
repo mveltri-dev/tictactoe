@@ -5,6 +5,7 @@ import { userService } from "../../services/userService"
 import { friendsService, type Friend, type FriendRequest } from "../../services/friendsService"
 import { matchmakingService, type MatchFoundData } from "../../services/matchmakingService"
 import styles from "./OnlineHub.module.css"
+import { Leaderboard } from "../Leaderboard"
 
 type OnlineView = "hub" | "profile" | "leaderboard" | "friends" | "play"
 
@@ -89,43 +90,30 @@ export function OnlineHub({ onLogout, onStartMatchmaking, onGameFound }: OnlineH
         })
         
         matchmakingService.onGameInvitation((data: any) => {
-          console.log('Invitation de jeu reçue:', data)
           const invitation: GameInvitation = {
             gameId: data.gameId,
             inviterId: data.inviterId,
             inviterUsername: data.inviterUsername,
             invitedAt: new Date()
           }
-          // Éviter les doublons : vérifier si l'invitation n'existe pas déjà
           setGameInvitations(prev => {
             const exists = prev.some(inv => inv.gameId === invitation.gameId)
-            if (exists) {
-              console.log('⚠️ Invitation en doublon ignorée:', invitation.gameId)
-              return prev
-            }
+            if (exists) return prev
             return [invitation, ...prev]
           })
-          // Afficher une notification visuelle au lieu d'une alerte
-          showNotification(`🎮 ${data.inviterUsername} vous invite à jouer !`, 'success')
         })
         
         matchmakingService.onInvitationDeclined((data: any) => {
-          console.log('Invitation refusée:', data)
           setSentInvitations(prev => prev.filter(inv => inv.gameId !== data.gameId))
-          showNotification(`❌ ${data.declinerUsername} a refusé votre invitation`, 'error')
         })
 
         matchmakingService.onInvitationAccepted((data: any) => {
-          console.log('✅ Invitation acceptée:', data)
-          // Retirer de la liste des invitations envoyées
           setSentInvitations(prev => prev.filter(inv => inv.gameId !== data.gameId))
-          // Ajouter aux parties actives (sans doublon)
           setActiveGames(prev => {
             const exists = prev.some(game => game.gameId === data.gameId)
             if (exists) return prev
             return [...prev, { gameId: data.gameId, opponentName: data.accepterUsername }]
           })
-          showNotification(`✅ ${data.accepterUsername} a accepté votre invitation !`, 'success')
         })
         
         // Initialiser SignalR APRÈS avoir configuré les callbacks
@@ -293,7 +281,7 @@ export function OnlineHub({ onLogout, onStartMatchmaking, onGameFound }: OnlineH
               <FriendsView key="friends" />
             )}
             {currentView === "leaderboard" && (
-              <LeaderboardView key="leaderboard" currentUserId={profile.id} />
+              <Leaderboard key="leaderboard" currentUserId={profile.id} />
             )}
             {currentView === "profile" && (
               <ProfileView key="profile" profile={profile} stats={stats} />
@@ -467,7 +455,6 @@ function PlayView({
       // Rediriger vers la vue "play" après l'envoi
       setTimeout(() => {
         setShowFriendsList(false)
-        navigateToView('play')
       }, 1500)
     } catch (err) {
       showNotification(getUserFriendlyError(err), 'error')
@@ -642,7 +629,7 @@ function PlayView({
               <div className={styles.invitation_actions}>
                 <button
                   className={`${styles.form_button} ${styles.form_button_success}`}
-                  onClick={() => handleAcceptInvitation(invitation.gameId, invitation.inviterUsername, invitation.inviterUsername)}
+                  onClick={() => handleAcceptInvitation(invitation.gameId, invitation.inviterUsername)}
                 >
                   ✓ Accepter
                 </button>
@@ -1148,24 +1135,7 @@ function FriendsView() {
   )
 }
 
-// Composant Classement
-function LeaderboardView({ currentUserId }: { currentUserId: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className={styles.view_container}
-    >
-      <h3 className={styles.view_title}>Classement Global</h3>
-      <p className={styles.view_subtitle}>Fonctionnalité à venir</p>
-      <div className={styles.placeholder}>
-        <Trophy className={styles.placeholder_icon} />
-        <p>Le classement sera bientôt disponible</p>
-      </div>
-    </motion.div>
-  )
-}
+
 
 // Composant Profil
 function ProfileView({ profile, stats }: { profile: UserProfile; stats: UserStats }) {
@@ -1211,17 +1181,15 @@ function ProfileView({ profile, stats }: { profile: UserProfile; stats: UserStat
       className={styles.view_container}
     >
       <h3 className={styles.view_title}>Modifier mon profil</h3>
-      <p className={styles.view_subtitle}>Gérez vos informations personnelles</p>
       
       <div className={styles.profile_form}>
         {/* Avatar */}
         <div className={styles.form_section}>
-          <label className={styles.form_label}>Avatar</label>
+
           <div className={styles.avatar_selector}>
             <div className={styles.avatar_large}>
               <Gamepad2 className={styles.avatar_icon} />
             </div>
-            <p className={styles.avatar_hint}>Les avatars personnalisés seront bientôt disponibles</p>
           </div>
         </div>
 
@@ -1301,7 +1269,7 @@ function ProfileView({ profile, stats }: { profile: UserProfile; stats: UserStat
         
         {success && (
           <div className={styles.form_success}>
-            ✅ Profil mis à jour avec succès !
+            Profil mis à jour avec succès !
           </div>
         )}
 

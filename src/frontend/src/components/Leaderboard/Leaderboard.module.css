@@ -1,0 +1,147 @@
+/* Classement Global - Style V0 modernisé */
+.leaderboardGlobalContainer {
+  background: #181c24;
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
+  max-width: 700px;
+  margin: 2rem auto;
+  color: #fff;
+  box-shadow: 0 4px 32px 0 #0002;
+}
+
+.leaderboardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.leaderboardTitle {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+}
+.leaderboardCount {
+  font-size: 1rem;
+  color: #a1a1aa;
+}
+
+.podiumRow {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+.podiumCard {
+  flex: 1 1 0;
+  background: #23273a;
+  border-radius: 1.2rem;
+  padding: 1.5rem 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 8px 0 #0001;
+  min-width: 140px;
+}
+.podiumGold {
+  border: 2px solid #fbbf24;
+}
+.podiumSilver {
+  border: 2px solid #d1d5db;
+}
+.podiumBronze {
+  border: 2px solid #f97316;
+}
+.podiumIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+.podiumName {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.2rem;
+}
+.podiumScore {
+  color: #fbbf24;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.leaderboardList {
+  margin-top: 1.5rem;
+}
+.leaderboardRow {
+  display: flex;
+  align-items: center;
+  background: #20232e;
+  border-radius: 1rem;
+  margin-bottom: 0.7rem;
+  padding: 1rem 1.2rem;
+  transition: background 0.2s;
+}
+.leaderboardRow:hover {
+  background: #23273a;
+}
+.currentUser {
+  border: 2px solid #6366f1;
+  background: #23273a;
+}
+.rankCell {
+  width: 2.5rem;
+  font-weight: bold;
+  color: #fbbf24;
+  font-size: 1.1rem;
+}
+.iconCell {
+  width: 2.5rem;
+  text-align: center;
+  font-size: 1.3rem;
+}
+.nameCell {
+  flex: 1 1 0;
+  font-weight: 500;
+  font-size: 1.1rem;
+  color: #fff;
+}
+.youBadge {
+  color: #6366f1;
+  font-size: 0.95em;
+  margin-left: 0.5em;
+}
+.metaCell {
+  font-size: 0.95em;
+  color: #a1a1aa;
+}
+.scoreCell {
+  width: 5rem;
+  font-weight: bold;
+  color: #fbbf24;
+  text-align: right;
+  font-size: 1.1rem;
+}
+.winrateCell {
+  width: 4rem;
+  color: #10b981;
+  font-weight: bold;
+  text-align: right;
+  font-size: 1.1rem;
+}
+
+.avatar_selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+.avatar_large {
+  background: #23273a;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar_icon {
+  color: #fbbf24;
+  font-size: 20px;
+}
