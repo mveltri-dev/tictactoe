@@ -55,6 +55,8 @@ export function GameBoard({
   if (typeof window !== "undefined") {
     // eslint-disable-next-line no-console
     console.log(`[GameBoard] board.length=${board.length}, rows=${rows}, cols=${cols}, nRows=${nRows}, nCols=${nCols}`)
+    // Log de la ligne gagnante à chaque rendu
+    console.log('[GameBoard] winningLine:', winningLine)
   }
   // Correction : si board.length !== nRows * nCols, afficher un warning
   if (typeof window !== "undefined" && nRows * nCols !== board.length) {
@@ -83,16 +85,7 @@ export function GameBoard({
         />
       ))}
 
-      {/* Ligne gagnante */}
-      {lineStyle && (
-        <motion.div
-          className={styles.winning_line}
-          style={lineStyle}
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" } as const}
-        />
-      )}
+      {/* Surbrillance des cases gagnantes uniquement, pas de ligne visuelle */}
     </motion.div>
   )
 }
