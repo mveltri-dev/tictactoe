@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { api } from "../services/api"
+import { matchmakingService } from "../services/matchmakingService"
 import type { GameDTO, CreateGameRequest, AppState, Symbol, GameModeAPI } from "../dtos"
 
 interface GameConfig {
@@ -25,6 +26,7 @@ interface UseGameReturn {
   
   // Actions
   createGame: (config: CreateGameRequest) => Promise<GameDTO | null>
+  loadGame: (gameId: string) => Promise<void>
   makeMove: (position: number, playerId: string) => Promise<void>
   resetGame: () => void
   updateConfig: (partialConfig: Partial<GameConfig>) => void
@@ -43,6 +45,33 @@ export function useGame(): UseGameReturn {
   const [scores, setScores] = useState<Scores>({ X: 0, O: 0, draws: 0 })
   const autoRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previousGameStatusRef = useRef<string | null>(null)
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Écouter les mises à jour SignalR pour les parties multijoueur
+  useEffect(() => {
+    if (game && config?.gameMode === "VsPlayerOnline") {
+      console.log("🎮 Configuration de l'écoute SignalR pour la partie:", game.id)
+      
+      matchmakingService.onGameUpdated((updatedGameData: any) => {
+        console.log("🎮 Mise à jour reçue pour gameId:", updatedGameData.id)
+        if (updatedGameData.id === game.id) {
+          console.log("✅ Mise à jour de l'état du jeu:", updatedGameData)
+          setGame(updatedGameData)
+          setAppState("playing")
+        }
+      })
+    }
+  }, [game?.id, config?.gameMode])
+
+  // Polling désactivé : SignalR gère les mises à jour en temps réel
+  useEffect(() => {
+    // Nettoyer si un polling était actif
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [])
 
   // Auto-restart après fin de partie
   useEffect(() => {
@@ -108,6 +137,33 @@ export function useGame(): UseGameReturn {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la partie")
       setAppState("error")
       return null
+    }
+  }, [])
+
+  const loadGame = useCallback(async (gameId: string): Promise<void> => {
+    try {
+      setAppState("loading")
+      setError(null)
+      
+      const loadedGame = await api.getGame(gameId)
+      setGame(loadedGame)
+      
+      // Créer une config basée sur les données de la partie
+      const playerXName = (loadedGame as any).playerXName || "Joueur X"
+      const playerOName = (loadedGame as any).playerOName || "Joueur O"
+      
+      setConfig({
+        player1Name: playerXName,
+        player2Name: playerOName,
+        chosenSymbol: "X", // Par défaut
+        gameMode: loadedGame.mode
+      })
+      previousGameStatusRef.current = loadedGame.status
+      setAppState("playing")
+    } catch (err) {
+      console.error('Erreur dans loadGame:', err)
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement de la partie")
+      setAppState("error")
     }
   }, [])
 
@@ -185,6 +241,7 @@ export function useGame(): UseGameReturn {
     error,
     scores,
     createGame,
+    loadGame,
     makeMove,
     resetGame,
     updateConfig,
