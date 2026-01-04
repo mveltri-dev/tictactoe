@@ -10,6 +10,8 @@ import { LoginForm } from "../components/molecules"
 import { authService } from "../services/authService"
 import type { CreateGameRequest, GameModeAPI } from "../dtos"
 import styles from "./App.module.css"
+import { BackgroundMusic } from "../components/atoms/BackgroundMusic"
+import { SoundEffectsProvider } from "../components/atoms/SoundEffects"
 
 // Map GameModeAPI to GameMode type for selector
 type GameMode = "ai" | "local" | "friend"
@@ -275,119 +277,124 @@ export function App() {
   }
 
   return (
-    <GameLayout
-      isSoundEnabled={isSoundEnabled}
-      onSoundToggle={() => setIsSoundEnabled(!isSoundEnabled)}
-      language={language}
-      onLanguageChange={setLanguage}
-      currentMode={mapApiToLocalMode(gameMode)}
-      onSelectMode={onSelectMode}
-    >
-      {/* Affichage du jeu pour les parties en cours */}
-      {game && config && (appState === "playing" || (appState === "finished" && location.pathname.startsWith('/game/'))) && location.pathname.startsWith('/game/') && (
-        <div className={styles.content_container}>
-          <GamePlaying
-            game={game}
-            config={config}
-            appState={appState}
-            error={error}
-            scores={scores}
-            onCellClick={handleCellClick}
-            onNewGame={handleNewGame}
-            onRestart={handleRestart}
-            modeLabel={config?.gameMode || gameMode}
-            isSoundEnabled={isSoundEnabled}
-          />
-        </div>
-      )}
-
-      {/* Écran de chargement dédié pour le restart automatique */}
-      {appState === "loading" && location.pathname.startsWith('/game/') && (
-        <div className={styles.loading_container}>
-          <div className={styles.loading__spinner} />
-          <p className={styles.loading__text}>Nouvelle partie...</p>
-        </div>
-      )}
-
-      <Routes>
-        {/* Page d'accueil - Configuration */}
-        <Route path="/" element={
-          <>
-            {appState === "loading" && !game && (
-              <div className={styles.loading_container}>
-                <div className={styles.loading_spinner} />
-                <p className={styles.loading_text}>Préparation de la partie contre EasiBot...</p>
-              </div>
-            )}
-
-            {(() => {
-              console.log('[DEBUG][App] render, appState:', appState, 'game:', game, 'config:', config, 'gameMode:', gameMode)
-              if (appState === "configuration") {
-                return (
-                  <div className={styles.content_container}>
-                    <GameConfiguration
-                      key={gameMode} // force le remount à chaque changement de mode
-                      gameMode={gameMode}
-                      onStartGame={handleStartGame}
-                    />
-                  </div>
-                )
-              }
-              return null
-            })()}
-
-            {appState === "error" && !game && error && (
-              // L'affichage d'erreur sera remplacé par un toast
-              null
-            )}
-          </>
-        } />
-
-        {/* Page de login (uniquement pour le mode online) */}
-        <Route path="/login" element={
-          <div className={styles.content_container}>
-            <LoginForm onLogin={handleLoginSubmit} onClose={() => { setGameMode('VsComputer'); navigate('/'); }} />
-          </div>
-        } />
-
-        {/* Page de lobby (nécessite authentification) */}
-        <Route path="/lobby" element={
-          token ? (
+    <>
+      <BackgroundMusic enabled={isSoundEnabled} />
+      <SoundEffectsProvider enabled={isSoundEnabled}>
+        <GameLayout
+          isSoundEnabled={isSoundEnabled}
+          onSoundToggle={() => setIsSoundEnabled(!isSoundEnabled)}
+          language={language}
+          onLanguageChange={setLanguage}
+          currentMode={mapApiToLocalMode(gameMode)}
+          onSelectMode={onSelectMode}
+        >
+          {/* Affichage du jeu pour les parties en cours */}
+          {game && config && (appState === "playing" || (appState === "finished" && location.pathname.startsWith('/game/'))) && location.pathname.startsWith('/game/') && (
             <div className={styles.content_container}>
-              <OnlineHub 
-                onLogout={handleLogout}
-                onStartMatchmaking={() => console.log('Matchmaking')}
-                onGameFound={handleGameFound}
+              <GamePlaying
+                game={game}
+                config={config}
+                appState={appState}
+                error={error}
+                scores={scores}
+                onCellClick={handleCellClick}
+                onNewGame={handleNewGame}
+                onRestart={handleRestart}
+                modeLabel={config?.gameMode || gameMode}
+                isSoundEnabled={isSoundEnabled}
               />
             </div>
-          ) : (
-            <div className={styles.content_container}>
-              <p>Vous devez être connecté pour accéder au lobby.</p>
-              <button onClick={() => navigate('/login')} className={styles.button}>
-                Se connecter
-              </button>
+          )}
+
+          {/* Écran de chargement dédié pour le restart automatique */}
+          {appState === "loading" && location.pathname.startsWith('/game/') && (
+            <div className={styles.loading_container}>
+              <div className={styles.loading__spinner} />
+              <p className={styles.loading__text}>Nouvelle partie...</p>
             </div>
-          )
-        } />
+          )}
 
-        {/* Page de jeu */}
-        <Route path="/game/:id" element={
-          <>
-            {appState === "loading" && !game && (
-              <div className={styles.loading_container}>
-                <div className={styles.loading_spinner} />
-                <p className={styles.loading_text}>Chargement de la partie...</p>
+          <Routes>
+            {/* Page d'accueil - Configuration */}
+            <Route path="/" element={
+              <>
+                {appState === "loading" && !game && (
+                  <div className={styles.loading_container}>
+                    <div className={styles.loading_spinner} />
+                    <p className={styles.loading_text}>Préparation de la partie contre EasiBot...</p>
+                  </div>
+                )}
+
+                {(() => {
+                  console.log('[DEBUG][App] render, appState:', appState, 'game:', game, 'config:', config, 'gameMode:', gameMode)
+                  if (appState === "configuration") {
+                    return (
+                      <div className={styles.content_container}>
+                        <GameConfiguration
+                          key={gameMode} // force le remount à chaque changement de mode
+                          gameMode={gameMode}
+                          onStartGame={handleStartGame}
+                        />
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
+                {appState === "error" && !game && error && (
+                  // L'affichage d'erreur sera remplacé par un toast
+                  null
+                )}
+              </>
+            } />
+
+            {/* Page de login (uniquement pour le mode online) */}
+            <Route path="/login" element={
+              <div className={styles.content_container}>
+                <LoginForm onLogin={handleLoginSubmit} onClose={() => { setGameMode('VsComputer'); navigate('/'); }} />
               </div>
-            )}
+            } />
 
-            {!game && appState === "error" && (
-              // L'affichage d'erreur sera remplacé par un toast
-              null
-            )}
-          </>
-        } />
-      </Routes>
-    </GameLayout>
+            {/* Page de lobby (nécessite authentification) */}
+            <Route path="/lobby" element={
+              token ? (
+                <div className={styles.content_container}>
+                  <OnlineHub 
+                    onLogout={handleLogout}
+                    onStartMatchmaking={() => console.log('Matchmaking')}
+                    onGameFound={handleGameFound}
+                  />
+                </div>
+              ) : (
+                <div className={styles.content_container}>
+                  <p>Vous devez être connecté pour accéder au lobby.</p>
+                  <button onClick={() => navigate('/login')} className={styles.button}>
+                    Se connecter
+                  </button>
+                </div>
+              )
+            } />
+
+            {/* Page de jeu */}
+            <Route path="/game/:id" element={
+              <>
+                {appState === "loading" && !game && (
+                  <div className={styles.loading_container}>
+                    <div className={styles.loading_spinner} />
+                    <p className={styles.loading_text}>Chargement de la partie...</p>
+                  </div>
+                )}
+
+                {!game && appState === "error" && (
+                  // L'affichage d'erreur sera remplacé par un toast
+                  null
+                )}
+              </>
+            } />
+          </Routes>
+        </GameLayout>
+      </SoundEffectsProvider>
+    </>
   )
 }
 

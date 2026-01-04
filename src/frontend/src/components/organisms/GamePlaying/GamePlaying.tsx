@@ -1,6 +1,6 @@
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 // Le fichier global.d.ts est automatiquement inclus par TypeScript s'il est dans src/types ou référencé dans tsconfig.json
 import { useToast } from "../toast/toast"
 import type { GameDTO, GameModeAPI, Symbol, AppState } from "../../../dtos"
@@ -14,6 +14,7 @@ import { matchmakingService, MatchmakingService } from "../../../services/matchm
 const mmService: MatchmakingService = matchmakingService
 // @ts-ignore
 import { authService } from "../../../services/authService"
+import { useSoundEffects } from "../../atoms/SoundEffects"
 import styles from "./GamePlaying.module.css"
 
 interface GameConfig {
@@ -52,8 +53,6 @@ const mapApiMode = (apiMode: GameModeAPI): GameMode => {
   }
 }
 
-console.log('[DEBUG] GamePlaying.tsx chargé')
-
 export function GamePlaying({
   game,
   config,
@@ -65,32 +64,35 @@ export function GamePlaying({
   onRestart,
   modeLabel
 }: GamePlayingProps) {
+  const { play } = useSoundEffects()
+
+  // Handler pour le clic sur une case (toujours défini !)
+  const handleCellClick = (position: number) => {
+    play("move")
+    onCellClick(position)
+  }
+
   // Initialiser la connexion SignalR si absente
   useEffect(() => {
     if (!mmService.getConnection()) {
-      console.log('[DEBUG] Initialisation de la connexion SignalR (auto)')
       mmService.initializeConnection().then(() => {
-        console.log('[DEBUG] Connexion SignalR initialisée')
       }).catch((err) => {
         console.error('[DEBUG] Erreur initialisation SignalR', err)
       })
     }
   }, [])
-
   // Gestion de l'abandon de partie en ligne
   const [isForfeiting, setIsForfeiting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   // Pour simuler le clic sur le mode dans la liste déroulante
   const handleForfeit = async () => {
     setShowConfirm(false)
-    console.log('[DEBUG][GamePlaying] handleForfeit appelé, mode:', config.gameMode)
     if (config.gameMode === "VsPlayerOnline" && game.id) {
       setIsForfeiting(true)
       try {
         const userIdRaw = authService.getUserIdFromToken()
         const userId = userIdRaw ?? ""
         await mmService.forfeitGame(game.id, userId)
-        console.log('[DEBUG][GamePlaying] navigate /lobby après forfeit online')
         navigate("/lobby")
       } catch (err: any) {
         showError(err.message || "Erreur lors de l'abandon de la partie")
@@ -98,7 +100,6 @@ export function GamePlaying({
         setIsForfeiting(false)
       }
     } else {
-      console.log('[DEBUG][GamePlaying] onNewGame appelé depuis handleForfeit')
       onNewGame();
     }
   }
@@ -111,22 +112,16 @@ export function GamePlaying({
       conn &&
       conn.state === "Connected"
     ) {
-      console.log('[DEBUG SignalR] Appel JoinGame (connexion) sur le hub pour gameId:', game.id)
       conn.invoke("JoinGame", game.id)
-    } else {
-      console.log('[DEBUG SignalR] JoinGame (connexion) NON appelé (état)', { gameId: game.id, mode: config.gameMode, connState: conn?.state })
     }
   }, [game.id, config.gameMode, mmService.getConnection()])
-  console.log('[DEBUG] GamePlaying monté, gameId:', game.id, 'mode:', config.gameMode)
   const navigate = useNavigate()
   const [rematchStatus, setRematchStatus] = useState<'idle' | 'waiting' | 'opponent-waiting' | 'opponent-left'>('idle')
   const { showError } = useToast()
   const [pendingGameId, setPendingGameId] = useState<string | null>(null)
   // Appel à JoinGame au montage du composant
   useEffect(() => {
-    console.log('[DEBUG SignalR] useEffect JoinGame (montage) déclenché', { gameId: game.id, mode: config.gameMode, conn: mmService.getConnection() })
     if (config.gameMode === "VsPlayerOnline" && game.id && mmService.getConnection()) {
-      console.log('[DEBUG SignalR] Appel JoinGame (montage) sur le hub pour gameId:', game.id)
       mmService.getConnection()?.invoke("JoinGame", game.id)
     }
   }, [])
@@ -137,7 +132,6 @@ export function GamePlaying({
     let intervalId: NodeJS.Timeout | null = null
     function tryJoinGame() {
       const conn = mmService.getConnection()
-      console.log('[DEBUG SignalR] tryJoinGame', { gameId: game.id, mode: config.gameMode, connState: conn?.state })
       if (
         config.gameMode === "VsPlayerOnline" &&
         game.id &&
@@ -145,7 +139,6 @@ export function GamePlaying({
         conn.state === "Connected" &&
         !joined
       ) {
-        console.log('[DEBUG SignalR] Appel JoinGame sur le hub pour gameId:', game.id)
         conn.invoke("JoinGame", game.id)
         joined = true
         if (intervalId) clearInterval(intervalId)
@@ -159,13 +152,11 @@ export function GamePlaying({
   
   // Réinitialiser les états du rematch quand la partie change
   useEffect(() => {
-    console.log('[DEBUG] useEffect rematch reset exécuté', { gameId: game.id })
     setRematchStatus('idle')
     setPendingGameId(null)
   }, [game.id])
 
   useEffect(() => {
-    console.log('[DEBUG] useEffect rematch events exécuté', { gameId: game.id, mode: config.gameMode })
     if (config.gameMode !== "VsPlayerOnline" || game.status === "InProgress") return
     
     const userId = authService.getUserIdFromToken()
@@ -173,26 +164,20 @@ export function GamePlaying({
     
     // Écouter OpponentLeft
     mmService.onOpponentLeft((userId: string) => {
-      console.log('[DEBUG OpponentLeft] Event reçu, userId:', userId)
       setRematchStatus('opponent-left')
       setPendingGameId(null)
-      console.log('[DEBUG OpponentLeft] rematchStatus:', 'opponent-left')
     })
     // Écouter les demandes de rematch (nouvel événement dédié)
     mmService.onRematchRequest((data: any) => {
-      console.log('🔄 Demande de rematch reçue:', data)
-      
       // Vérifier si c'est une demande de l'adversaire actuel
       if (data.requesterId === opponentId) {
         if (rematchStatus === 'waiting' && pendingGameId) {
           // Les deux veulent rejouer ! Accepter automatiquement
-          console.log('✅ Les deux joueurs veulent rejouer ! Acceptation automatique')
           matchmakingService.acceptRematch(data.gameId).then(() => {
             navigate(`/game/${data.gameId}`)
           })
         } else {
           // L'adversaire veut rejouer, on stocke la demande
-          console.log('📥 L\'adversaire veut rejouer, demande stockée')
           setPendingGameId(data.gameId)
           setRematchStatus('opponent-waiting')
         }
@@ -201,10 +186,8 @@ export function GamePlaying({
     
     // Écouter si l'adversaire refuse le rematch
     mmService.onRematchDeclined((data: any) => {
-      console.log('❌ Rematch refusé:', data)
       // Mettre à jour l'état pour montrer que l'adversaire a quitté
       setRematchStatus((current) => {
-        console.log('État actuel:', current)
         if (current === 'waiting' || current === 'opponent-waiting') {
           return 'opponent-left'
         }
@@ -215,12 +198,12 @@ export function GamePlaying({
     
     // Écouter si l'adversaire accepte le rematch
     mmService.onRematchAccepted((data: any) => {
-      console.log('✅ Rematch accepté:', data)
       setRematchStatus((current) => {
         if (current === 'waiting') {
-          // L'adversaire a accepté, naviguer vers la partie
-          console.log('🎮 Navigation vers la partie acceptée:', data.gameId)
-          navigate(`/game/${data.gameId}`)
+          // L'adversaire a accepté, attendre pour laisser le son se jouer
+          setTimeout(() => {
+            navigate(`/game/${data.gameId}`)
+          }, 700)
         }
         return current
       })
@@ -234,12 +217,9 @@ export function GamePlaying({
       const userId = authService.getUserIdFromToken()
       const opponentId = userId === game.playerXId ? game.playerOId : game.playerXId
       
-      console.log('🔄 Demande de rematch avec:', opponentId)
-      
       // Vérifier si l'adversaire a déjà envoyé une demande de rematch
       if (pendingGameId) {
         // Les deux veulent rejouer ! Accepter la demande de l'adversaire
-        console.log('✅ Les deux joueurs veulent rejouer ! Acceptation de la demande')
         await mmService.acceptRematch(pendingGameId)
         navigate(`/game/${pendingGameId}`)
         return
@@ -247,7 +227,6 @@ export function GamePlaying({
       
       // Envoyer notre demande de rematch
       const result = await mmService.requestRematch(opponentId)
-      console.log('✅ Demande de rematch envoyée, gameId:', result.gameId)
       
       // Passer en mode attente
       setRematchStatus('waiting')
@@ -271,13 +250,46 @@ export function GamePlaying({
     navigate('/lobby')
   }
   
-  try {
-    // DEBUG : log du statut et de la ligne gagnante
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
-      console.log("[GamePlaying] status:", game.status, "winningLine:", game.winningLine)
-      console.log('[DEBUG] GamePlaying render, gameId:', game.id, 'mode:', config.gameMode, 'conn:', mmService.getConnection())
+  // Son "move" à chaque changement de board (coup joué, humain ou IA)
+  const lastBoardRef = useRef(game.board)
+  useEffect(() => {
+    if (lastBoardRef.current !== game.board &&
+        Array.isArray(lastBoardRef.current) &&
+        Array.isArray(game.board) &&
+        game.board.some((cell, i) => cell !== lastBoardRef.current[i])) {
+      console.log('[SOUND] play("move")')
+      play("move")
     }
+    lastBoardRef.current = game.board
+  }, [game.board, play])
+
+  // Son victoire/défaite à chaque changement de status
+  const lastStatusRef = useRef(game.status)
+  useEffect(() => {
+    if (lastStatusRef.current !== game.status) {
+      console.log('[SOUND][DEBUG] Nouveau status:', game.status, 'ancien:', lastStatusRef.current, 'chosenSymbol:', config.chosenSymbol)
+      // Victoire du joueur humain
+      if (
+        (game.status === "XWins" && config.chosenSymbol === "X") ||
+        (game.status === "OWins" && config.chosenSymbol === "O")
+      ) {
+        console.log('[SOUND] play("win")')
+        play("win")
+      }
+      // Défaite du joueur humain
+      else if (
+        (game.status === "XWins" && config.chosenSymbol === "O") ||
+        (game.status === "OWins" && config.chosenSymbol === "X")
+      ) {
+        console.log('[SOUND] play("lose")')
+        play("lose")
+      }
+    }
+    lastStatusRef.current = game.status
+  }, [game.status, play, config.chosenSymbol])
+
+  try {
+    // (plus de logs de debug ici)
     const getPlayerName = (symbol: Symbol): string => {
       if (config.gameMode === "VsComputer") {
         return symbol === config.chosenSymbol ? config.player1Name : "EasiBot"
@@ -441,7 +453,7 @@ export function GamePlaying({
       {!isWaitingForOpponent && (
         <GameBoard
           board={game.board}
-          onCellClick={onCellClick}
+          onCellClick={handleCellClick}
           disabled={isLoading || isFinished || !canClick}
           winningLine={game.winningLine || []}
           rows={game.height}

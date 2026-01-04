@@ -182,7 +182,7 @@ export function SettingsMenu({ isSoundEnabled, onSoundToggle, language, onLangua
                     </button>
                     <div>
                       <h3 className={styles.dropdown__title}>Règles du jeu</h3>
-                      <p className={styles.dropdown__subtitle}>Comment jouer à Easi</p>
+                      <p className={styles.dropdown__subtitle}>Comment jouer à Tic-Tac-Toe ?</p>
                     </div>
                   </div>
                   {rulesContent}

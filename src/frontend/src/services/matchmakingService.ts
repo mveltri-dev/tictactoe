@@ -63,12 +63,9 @@ export class MatchmakingService {
   }
 
   invoke(method: string, ...args: any[]): Promise<any> {
-      console.log('[DEBUG matchmakingService] invoke appelé', method, args)
     if (!this.connection) {
-      console.error('[DEBUG matchmakingService] invoke appelé sans connexion', method, args)
       return Promise.reject('Pas de connexion SignalR')
     }
-    console.log('[DEBUG matchmakingService] invoke appelé', method, args)
     return this.connection.invoke(method, ...args)
   }
 
