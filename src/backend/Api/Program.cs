@@ -180,9 +180,9 @@ app.Use(async (context, next) =>
     {
         app.Logger.LogInformation($"++++++++++DEBG++++ SignalR Request: {context.Request.Method} {context.Request.Path} from {context.Request.Headers.Origin}");
     }
-    if (context.Request.Headers.Origin != null)
+    if (!string.IsNullOrEmpty(context.Request.Headers["Origin"]))
     {
-        app.Logger.LogInformation($"++++++++++DEBG++++ CORS Origin: {context.Request.Headers.Origin}");
+        app.Logger.LogInformation($"++++++++++DEBG++++ CORS Origin: {context.Request.Headers["Origin"]}");
     }
     await next();
     if (context.Request.Path.StartsWithSegments("/gamehub"))
