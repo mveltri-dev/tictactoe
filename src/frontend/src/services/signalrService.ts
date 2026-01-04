@@ -17,25 +17,32 @@ class SignalRService {
   private callbacks: GameEventCallbacks = {}
 
   async connect(): Promise<void> {
+    console.log('++++++++++DEBG++++ SignalRService.connect() called');
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
+      console.log('++++++++++DEBG++++ SignalR already connected');
       return
     }
 
     const token = authService.getToken()
+    console.log('++++++++++DEBG++++ SignalR token:', token);
     if (!token) {
       throw new Error('Authentification requise pour SignalR')
     }
 
+    console.log('++++++++++DEBG++++ SignalR BASE_URL:', BASE_URL);
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${BASE_URL}/gamehub`, {
-        accessTokenFactory: () => token,
+        accessTokenFactory: () => {
+          console.log('++++++++++DEBG++++ SignalR accessTokenFactory called');
+          return token;
+        },
       })
       .withAutomaticReconnect()
       .build()
 
     // Enregistrer les handlers
     this.connection.on('PlayerJoinedRoom', (room: RoomDTO) => {
-      console.log('SignalR: PlayerJoinedRoom', room)
+      console.log('++++++++++DEBG++++ SignalR: PlayerJoinedRoom', room)
       this.callbacks.onPlayerJoinedRoom?.(room)
     })
 

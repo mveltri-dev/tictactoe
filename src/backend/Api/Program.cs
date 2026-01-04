@@ -176,9 +176,19 @@ app.UseCors("AllowFrontend");
 // Middleware de logging pour déboguer (après CORS)
 app.Use(async (context, next) =>
 {
-    app.Logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path} from {context.Request.Headers.Origin}");
+    if (context.Request.Path.StartsWithSegments("/gamehub"))
+    {
+        app.Logger.LogInformation($"++++++++++DEBG++++ SignalR Request: {context.Request.Method} {context.Request.Path} from {context.Request.Headers.Origin}");
+    }
+    if (context.Request.Headers.Origin != null)
+    {
+        app.Logger.LogInformation($"++++++++++DEBG++++ CORS Origin: {context.Request.Headers.Origin}");
+    }
     await next();
-    app.Logger.LogInformation($"Response: {context.Response.StatusCode}");
+    if (context.Request.Path.StartsWithSegments("/gamehub"))
+    {
+        app.Logger.LogInformation($"++++++++++DEBG++++ SignalR Response: {context.Response.StatusCode}");
+    }
 });
 
 // 2. Activer Swagger 
