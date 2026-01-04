@@ -1,185 +1,77 @@
-# Trigger Azure Static Web Apps deployment test
-# TicTacToe
+# TicTacToe – Projet de recrutement EASI
 
-Application TicTacToe complète avec backend .NET 10 et frontend React + TypeScript.
+TicTacToe est un jeu de réflexion classique revisité en version web moderne : jouez en local, contre une IA ou en ligne, suivez votre progression, défiez vos amis et découvrez une interface professionnelle pensée pour le cloud et le recrutement.
 
-## Démarrage Rapide
+👉 **Accès au jeu en ligne** : https://happy-pond-02f78f203.6.azurestaticapps.net/
 
-### Prérequis
+---
+
+## Qu’est-ce que ce jeu ?
+
+TicTacToe est un jeu de stratégie à deux joueurs (X et O) sur une grille 3×3. Le but : aligner trois symboles identiques horizontalement, verticalement ou en diagonale. Cette version propose :
+- Plusieurs modes de jeu (local, contre IA, multijoueur en ligne)
+- Gestion des utilisateurs et authentification
+- Statistiques et classement
+- Interface moderne, responsive et animée
+
+---
+
+## Fonctionnalités principales
+
+- **Jeu local** : affrontez un ami sur le même écran
+- **Mode IA** : jouez contre l’ordinateur (stratégie évolutive)
+- **Multijoueur en ligne** : parties en temps réel (SignalR)
+- **Authentification JWT** : création de compte, connexion sécurisée
+- **Classement pondéré** : score calculé selon victoires, nuls, défaites
+- **Historique et statistiques** : suivez vos parties et votre progression
+- **Interface moderne** : animations, design responsive, thèmes clair/sombre
+- **Déploiement cloud-ready** : Azure Static Web Apps, CI/CD automatisé
+
+---
+
+## Documentation technique
+
+La documentation complète est disponible dans `/docs` :
+
+- [backend-architecture.md](docs/backend-architecture.md) : Clean Architecture, logique métier, SignalR
+- [frontend-documentation.md](docs/frontend-documentation.md) : Atomic Design, gestion d’état, conventions UI
+- [database-setup.md](docs/database-setup.md) : schéma PostgreSQL, migrations, sécurité
+- [authentication-jwt.md](docs/authentication-jwt.md) : JWT, sécurité, endpoints
+- [online-multiplayer-features.md](docs/online-multiplayer-features.md) : multijoueur, temps réel, rooms
+- [score-system.md](docs/score-system.md) : calcul du score, classement
+- [env-variables.md](docs/env-variables.md) : configuration, sécurité, exemples
+- [deploiement-azure.md](docs/deploiement-azure.md) : déploiement cloud, CI/CD
+- [scripts-commands.md](docs/scripts-commands.md) : commandes backend/frontend/devops
+- [conventions-organisation.md](docs/conventions-organisation.md) : structure, conventions, bonnes pratiques
+
+---
+
+## Prérequis
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 18+](https://nodejs.org/)
-- [PostgreSQL](https://www.postgresql.org/download/) (ou accès à une base Azure)
 
-### Configuration de la base de données
+---
 
-1. Créer un fichier `.env` dans `src/backend/` :
+## Travail restant / améliorations prévues
 
-```bash
-# Database
-DB_HOST=votre-serveur.postgres.database.azure.com
-DB_USER=votre_utilisateur
-DB_NAME=postgres
-DB_PASSWORD=votre_mot_de_passe
-DB_PORT=5432
+- Problème SignalR en cloud (notifications/auth online)
+- Authentification à finaliser en production
+- Chat et rooms à implémenter
+- Monitoring, tests et logs à renforcer
+- UX à peaufiner
 
-# JWT
-JWT_SECRET=votre_secret_genere_avec_openssl_rand_base64_32
-JWT_ISSUER=TicTacToeApi
-JWT_AUDIENCE=TicTacToeClient
-```
+---
 
-2. Appliquer les migrations :
+## Problèmes connus
 
-```bash
-cd src/backend/Infrastructure
-dotnet ef database update --startup-project ../Api
-```
+- **SignalR** : notifications et authentification en ligne non fonctionnelles sur la version cloud (Azure). Le jeu fonctionne normalement en local.
+- **Tests** : couverture à renforcer pour garantir la robustesse en production.
 
-dotnet ef database update --startup-project ../Api
-```
+---
 
-### Lancer le backend
+**Auteur : Marie Veltri**
 
-```bash
-cd src/backend/Api
-dotnet run --project Api.csproj
-```
+Projet de recrutement EASI
 
-L'API sera accessible sur `http://localhost:5000`
-
-### Lancer le frontend
-
-```bash
-cd src/frontend
-npm install
-npm run dev
-```
-
-L'application sera accessible sur `http://localhost:5173`
- 
-## Fonctionnalités
-
-### Modes de jeu
-
-1. **Vs Player Local** : Deux joueurs sur le même appareil
-2. **Vs Computer** : Jouer contre l'IA (placement aléatoire)
-3. **Vs Player Online** : Multijoueur en ligne (nécessite compte utilisateur)
-
-### Système d'authentification
-
-- Inscription et connexion avec JWT
-- Historique des parties jouées
-- Statistiques personnelles (victoires, défaites, ratio)
-
-### Rejouer facilement
-
-- Bouton "Nouvelle partie" après chaque fin de partie
-- Aucun rechargement de page nécessaire
-- Choix du mode de jeu à chaque nouvelle partie
-
-## Architecture
-
-### Backend - Clean Architecture
-
-```
-src/backend/
-├── Domain/          # Entités métier (Game, Player, User)
-├── Application/     # DTOs et logique applicative
-├── Infrastructure/  # Database, Services, Migrations
-└── Api/            # Controllers REST
-```
-
-**Technologies :**
-- .NET 10
-- Entity Framework Core
-- PostgreSQL
-- JWT Authentication
-- BCrypt pour les mots de passe
-
-### Frontend - Atomic Design
-
-```
-src/frontend/
-└── src/
-    ├── components/
-    │   ├── atoms/      # Boutons, inputs
-    │   ├── molecules/  # Cellules du plateau
-    │   ├── organisms/  # Plateau complet
-    │   └── templates/  # Layouts
-    ├── pages/          # Pages de l'app
-    ├── hooks/          # Logique réutilisable
-    └── services/       # API calls
-```
-
-**Technologies :**
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-
-## API Endpoints
-
-### Authentification
-
-- `POST /api/auth/register` - Créer un compte
-- `POST /api/auth/login` - Se connecter
-
-### Partie
-
-- `POST /api/game` - Créer une partie
-- `GET /api/game/{id}` - Récupérer une partie
-- `POST /api/game/{id}/move` - Jouer un coup
-- `POST /api/game/{id}/ai-move` - L'IA joue (mode VsComputer)
-
-### Historique (nécessite authentification)
-
-- `GET /api/game/history` - Historique de l'utilisateur
-- `GET /api/game/stats` - Statistiques de l'utilisateur
-
-## Évolutivité
-
-Le code est conçu pour être facilement extensible :
-
-- **Taille du plateau** : Support natif des grilles NxM (actuellement 3x3)
-- **Nouveaux modes** : Architecture permet d'ajouter facilement de nouveaux GameMode
-- **IA améliorée** : Service dédié remplaçable par algorithme intelligent (Minimax)
-- **WebSockets** : Architecture prête pour ajout de temps réel
-
-## Tests
-
-### Tester l'API avec curl
-
-```bash
-# Créer un utilisateur
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"joueur1","email":"joueur1@test.com","password":"password123"}'
-
-# Créer une partie
-curl -X POST http://localhost:5000/api/game \
-  -H "Content-Type: application/json" \
-  -d '{"mode":"VsComputer","player1Name":"Marie"}'
-
-# Jouer un coup (remplacer {id} par l'ID de la partie)
-curl -X POST http://localhost:5000/api/game/{id}/move \
-  -H "Content-Type: application/json" \
-  -d '{"position":4}'
-
-# L'IA joue
-curl -X POST http://localhost:5000/api/game/{id}/ai-move
-```
- 
-## Documentation Technique
-
-Documentation détaillée disponible dans `/docs` :
-
-- [Architecture Backend](docs/backend-architecture.md)
-- [Configuration Database](docs/database-setup.md)
-- [Authentification JWT](docs/authentication-jwt.md)
-- [Features Multijoueur](docs/online-multiplayer-features.md)
-- [Documentation Frontend](docs/frontend-documentation.md)
-
-## Auteur
-
-Marie Veltri - Projet de recrutement EASI
+**Dernière mise à jour : 4 janvier 2026**

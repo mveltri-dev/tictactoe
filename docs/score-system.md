@@ -4,11 +4,21 @@
 
 Le système de classement utilise un **score pondéré** au lieu d'un système ELO traditionnel. Ce système est plus simple et transparent pour les joueurs.
 
+## Philosophie et choix du scoring
+
+Le projet TicTacToe privilégie un système de score pondéré, simple et transparent, pour valoriser l’engagement et la progression des joueurs. Contrairement à l’ELO, ce système est immédiatement compréhensible et encourage la participation, tout en restant juste et motivant.
+
+---
+
 ## Formule de Calcul
 
 ```
 Score = (Victoires × 3) + (Matchs Nuls × 1) - (Défaites × 1)
 ```
+
+- Les victoires sont fortement valorisées
+- Les matchs nuls encouragent la persévérance
+- Les défaites pénalisent modérément, sans décourager
 
 ### Exemples
 
@@ -21,11 +31,16 @@ Score = (Victoires × 3) + (Matchs Nuls × 1) - (Défaites × 1)
 - **Joueur C** : 5 victoires, 8 défaites, 3 nuls
   - Score = (5 × 3) + (3 × 1) - (8 × 1) = 15 + 3 - 8 = **10 points**
 
-## Classement
+---
 
-Le classement est basé sur le **score** du plus élevé au plus bas. En cas d'égalité :
-1. Le joueur avec le meilleur **taux de victoire** est classé premier
-2. Si encore égalité, le joueur avec le plus de **victoires totales** est classé premier
+## Classement et égalités
+
+Le classement général est basé sur le score pondéré :
+1. Score le plus élevé
+2. Taux de victoire en cas d’égalité
+3. Nombre total de victoires si égalité persistante
+
+---
 
 ## Valeurs Initiales
 
@@ -78,43 +93,58 @@ Le dashboard affiche :
 - Les statistiques détaillées (victoires, parties, taux de victoire)
 - L'explication de la formule : "Score = (Victoires × 3) + (Nuls × 1) - (Défaites × 1)"
 
+---
+
 ## Avantages du Système
 
-1. **Simplicité** : Facile à comprendre et à calculer
-2. **Transparence** : Les joueurs comprennent exactement comment leur score est calculé
-3. **Valorisation des victoires** : Les victoires valent 3 fois plus qu'un nul
-4. **Pénalité modérée** : Les défaites retirent 1 point (pas trop punitif)
-5. **Encouragement à jouer** : Même les nuls ajoutent 1 point
+- **Simplicité** : accessible à tous
+- **Transparence** : chaque joueur comprend son score
+- **Valorisation** : les victoires sont récompensées
+- **Motivation** : même les nuls rapportent des points
+- **Équité** : défaites peu punitives, encourage à rejouer
 
-## Fonctionnalités par Onglet
+---
 
-### 1. Trouver une partie
-- **Jouer contre un ami** : Liste de tous les amis disponibles, possibilité d'inviter
-- **Jouer en ligne** : Matchmaking automatique avec un joueur connecté
+## Fonctionnalités associées
 
-### 2. Gérer mes amis
-- Liste complète des amis avec leur dashboard
-- Recherche d'amis par username
-- Consultation des statistiques de chaque ami
+- Matchmaking et invitation d’amis
+- Dashboard personnel et classement global
+- Statistiques détaillées pour chaque joueur
+- Profil personnalisable (avatar, bio, stats)
+- Design responsive et animations fluides
 
-### 3. Classement
-- Tableau de classement basé sur le score pondéré
-- Affichage du rang et du score de tous les joueurs
-- Triage par score décroissant, puis par taux de victoire
+---
 
-### 4. Modifier mon profil
-- Avatar personnalisable
-- Pseudo unique
-- Email
-- Âge
-- Biographie
-- Consultation des statistiques personnelles (victoires, défaites, parties, taux de victoire, score)
+## Implémentation technique
 
-## Interface Utilisateur
+### Backend (.NET 10)
+- Calcul du score dans l’endpoint `/api/user/stats`
+- Classement dynamique via tri des scores
+- Statistiques exposées dans l’API (DTO UserStats)
 
-L'interface suit strictement le style de V0 :
-- Couleurs et thèmes identiques
-- Mise en page fidèle
-- Composants réutilisables (cards, boutons, grilles)
-- Animations et transitions fluides
-- Design responsive (mobile et desktop)
+### Frontend (React/TypeScript)
+- Dashboard affichant score, rang, stats détaillées
+- Explication de la formule directement dans l’UI
+- Composants réutilisables pour leaderboard et profil
+
+---
+
+## Axes d’amélioration et extensions possibles
+
+- Passage à un système ELO pour les parties classées
+- Ajout de badges et succès pour milestones
+- Leaderboard avancé : filtres, historique, stats par mode
+- Statistiques temps réel via SignalR
+- Export des stats pour analyse externe
+
+---
+
+## Liens utiles
+
+- [backend-architecture.md](backend-architecture.md) : logique backend et scoring
+- [online-multiplayer-features.md](online-multiplayer-features.md) : scoring en multijoueur
+- [conventions-organisation.md](conventions-organisation.md) : organisation des composants UI
+
+---
+
+**Dernière mise à jour : 4 janvier 2026**
