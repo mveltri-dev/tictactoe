@@ -53,22 +53,22 @@ public class Game
     /// </summary>
     public Guid? WinnerId { get; set; }
 
-        /// <summary>
-        /// Positions des cases formant la ligne gagnante (index 0-8), ou null si pas de gagnant.
-        /// </summary>
-        public int[]? WinningLine { get; private set; }
+    /// <summary>
+    /// Positions des cases formant la ligne gagnante, ou null si pas de gagnant.
+    /// </summary>
+    public int[]? WinningLine { get; private set; }
 
-        public void SetWinningLine(int[] positions)
+    public void SetWinningLine(int[] positions)
+    {
+        if (positions == null)
         {
-            if (positions == null)
-            {
-                WinningLine = null;
-                return;
-            }
-            if (positions.Length < 3)
-                throw new ArgumentException("La ligne gagnante doit contenir au moins 3 positions");
-            WinningLine = positions;
+            WinningLine = null;
+            return;
         }
+        if (positions.Length < 3)
+            throw new ArgumentException("La ligne gagnante doit contenir au moins 3 positions");
+        WinningLine = positions;
+    }
 
     /// <summary>
     /// Date et heure de création de la partie.
