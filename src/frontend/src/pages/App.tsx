@@ -132,6 +132,7 @@ export function App() {
         return
       } else {
         console.log('[handleGameModeChange] Redirection vers /lobby car token présent')
+        setGameMode("VsPlayerOnline")
         navigate('/lobby')
         return
       }
@@ -295,6 +296,7 @@ export function App() {
             onNewGame={handleNewGame}
             onRestart={handleRestart}
             modeLabel={config?.gameMode || gameMode}
+            isSoundEnabled={isSoundEnabled}
           />
         </div>
       )}

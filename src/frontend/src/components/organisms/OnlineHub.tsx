@@ -151,11 +151,9 @@ export function OnlineHub({ onLogout, onStartMatchmaking, onGameFound }: OnlineH
           console.error('Erreur chargement invitations:', err)
         }
       } catch (err) {
-        const userMessage = err instanceof Error && err.message.toLowerCase().includes('fetch') 
-          ? '⚠️ Impossible de se connecter. Vérifiez votre connexion et réessayez.'
-          : '⚠️ Erreur lors du chargement de vos données. Veuillez rafraîchir la page.'
-        setError(userMessage)
         console.error('Erreur chargement données utilisateur:', err)
+        window.location.href = "/login"
+        return
       } finally {
         setIsLoading(false)
       }

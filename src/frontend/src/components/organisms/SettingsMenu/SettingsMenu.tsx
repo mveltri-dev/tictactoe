@@ -150,7 +150,9 @@ export function SettingsMenu({ isSoundEnabled, onSoundToggle, language, onLangua
                         <Globe className={styles.menu_item__icon} />
                         <span className={styles.menu_item__label}>Langue</span>
                       </div>
-                      <span className={cn(styles.menu_item__value, styles['menu_item__value--uppercase'])}>{language}</span>
+                      <span className={cn(styles.menu_item__value, styles['menu_item__value--uppercase'])}>
+                        {language === "en" ? "EN (coming soon)" : "FR"}
+                      </span>
                     </motion.button>
 
                     {/* Rules Button */}
