@@ -100,8 +100,8 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("WinnerId")
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<string>("WinningLine")
-                        .HasColumnType("jsonb");
+                    b.PrimitiveCollection<int[]>("WinningLine")
+                        .HasColumnType("integer[]");
 
                     b.HasKey("Id");
 
@@ -133,56 +133,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Players");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Room", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(6)
-                        .HasColumnType("character varying(6)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("GameId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("GuestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("HostId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("GameId");
-
-                    b.HasIndex("GuestId");
-
-                    b.HasIndex("HostId");
-
-                    b.ToTable("Rooms");
+                    b.ToTable("Player");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -258,31 +209,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("PlayerO");
 
                     b.Navigation("PlayerX");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Room", b =>
-                {
-                    b.HasOne("Domain.Entities.Game", "Game")
-                        .WithMany()
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Domain.Entities.User", "Guest")
-                        .WithMany()
-                        .HasForeignKey("GuestId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Domain.Entities.User", "Host")
-                        .WithMany()
-                        .HasForeignKey("HostId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Game");
-
-                    b.Navigation("Guest");
-
-                    b.Navigation("Host");
                 });
 #pragma warning restore 612, 618
         }

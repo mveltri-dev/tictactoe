@@ -14,6 +14,61 @@ namespace Infrastructure.Services;
 /// </summary>
 public class GameService
 {
+    /// <summary>
+    /// Permet à un joueur d'abandonner une partie en cours (défaite).
+    /// </summary>
+    public async Task<GameDTO> ForfeitGame(Guid gameId, Guid playerId)
+    {
+        // Récupérer la partie (mémoire ou DB)
+        Game? game;
+        bool isInMemory;
+        lock (_cacheLock)
+        {
+            isInMemory = _inMemoryGames.TryGetValue(gameId, out game);
+        }
+        if (!isInMemory)
+        {
+            game = await _dbContext.Games.FindAsync(gameId);
+        }
+        if (game == null)
+        {
+            throw new KeyNotFoundException($"Partie introuvable avec l'ID : {gameId}");
+        }
+        // Vérifier que la partie est en cours
+        if (game.Status != GameStatus.InProgress)
+        {
+            throw new InvalidOperationException($"La partie n'est pas en cours.");
+        }
+        // Déterminer le symbole du joueur qui abandonne
+        PlayerSymbol loserSymbol;
+        if (playerId == game.PlayerXId)
+            loserSymbol = PlayerSymbol.X;
+        else if (playerId == game.PlayerOId)
+            loserSymbol = PlayerSymbol.O;
+        else
+            throw new KeyNotFoundException($"Le joueur {playerId} ne participe pas à cette partie.");
+        // Déterminer le gagnant
+        PlayerSymbol winnerSymbol = loserSymbol == PlayerSymbol.X ? PlayerSymbol.O : PlayerSymbol.X;
+        // Mettre à jour le statut et le gagnant
+        game.Status = winnerSymbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
+        game.WinnerId = winnerSymbol == PlayerSymbol.X ? game.PlayerXId : game.PlayerOId;
+        // Optionnel : WinningLine = null (abandon)
+        game.SetWinningLine(null);
+        // Persister
+        if (isInMemory)
+        {
+            lock (_cacheLock)
+            {
+                _inMemoryGames[game.Id] = game;
+            }
+        }
+        else
+        {
+            _dbContext.Games.Update(game);
+            await _dbContext.SaveChangesAsync();
+        }
+        return GameMapper.ToDTO(game);
+    }
     private readonly TicTacToeDbContext _dbContext;
     private readonly IGameNotificationService? _notificationService;
     
@@ -78,7 +133,7 @@ public class GameService
     private List<int[]> GenerateWinningCombinations(int width, int height)
     {
         List<int[]> combinations = new();
-        int winLength = Math.Min(width, height); // Longueur à aligner pour gagner
+        int winLength = 3; // Longueur à aligner pour gagner (toujours 3)
 
         // 1. Lignes horizontales (toutes les séquences de winLength dans chaque ligne)
         for (int row = 0; row < height; row++)
@@ -148,6 +203,7 @@ public class GameService
     /// <exception cref="ArgumentException">Si les données de la requête sont invalides.</exception>
     public async Task<GameDTO> CreateGame(CreateGameRequest request)
     {
+        Console.WriteLine($"[CreateGame] width={request.Width}, height={request.Height}");
         try
         {
             // Validation de la requête
@@ -218,8 +274,10 @@ public class GameService
                 playerO = player1;
             }
 
-            // 5. Créer la partie - X commence
-            Game game = new Game(playerX.Id, playerO.Id, gameMode);
+            // 5. Créer la partie - X commence (dimensions dynamiques)
+            int width = request.Width >= 3 ? request.Width : 3;
+            int height = request.Height >= 3 ? request.Height : 3;
+            Game game = new Game(playerX.Id, playerO.Id, gameMode, width, height);
 
             // 6. Enregistrer selon le mode : mémoire (local) ou DB (online)
             if (RequiresDatabasePersistence(gameMode))
@@ -439,7 +497,7 @@ public class GameService
             {
                 game.Status = playerSymbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
                 game.WinnerId = request.PlayerId;
-                game.WinningLine = winningLine;
+                game.SetWinningLine(winningLine);
             }
             // 9. Vérifier s'il y a match nul
             else if (IsBoardFull(game))
@@ -519,10 +577,27 @@ public class GameService
                 return GameMapper.ToDTO(game);
             }
 
-            // Note: Le code de vérification du tour de l'ordinateur a été retiré
-            // car les tables Players n'existent plus. Les parties VsComputer sont
-            // gérées en mémoire uniquement.
-
+            // Si la partie est locale (VsComputer) et c'est au tour de l'IA, jouer automatiquement
+            if (!RequiresDatabasePersistence(game.Mode))
+            {
+                // Trouver le joueur IA (PlayerType.Computer) parmi les deux joueurs
+                Player? aiPlayer = null;
+                lock (_cacheLock)
+                {
+                    if (_inMemoryPlayers.TryGetValue(game.PlayerXId, out var px) && px.Type == PlayerType.Computer)
+                        aiPlayer = px;
+                    else if (_inMemoryPlayers.TryGetValue(game.PlayerOId, out var po) && po.Type == PlayerType.Computer)
+                        aiPlayer = po;
+                }
+                if (aiPlayer != null && game.CurrentTurn == aiPlayer.Symbol && game.Status == GameStatus.InProgress)
+                {
+                    await PlayComputerMove(game, aiPlayer);
+                    lock (_cacheLock)
+                    {
+                        _inMemoryGames[game.Id] = game;
+                    }
+                }
+            }
             return GameMapper.ToDTO(game);
         }
         catch (KeyNotFoundException)
@@ -616,7 +691,7 @@ public class GameService
         {
             game.Status = computerPlayer.Symbol == PlayerSymbol.X ? GameStatus.XWins : GameStatus.OWins;
             game.WinnerId = computerPlayer.Id;
-            game.WinningLine = winningLine;
+            game.SetWinningLine(winningLine);
         }
         // 6. Vérifier s'il y a match nul
         else if (IsBoardFull(game))

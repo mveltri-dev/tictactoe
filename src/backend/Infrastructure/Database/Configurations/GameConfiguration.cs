@@ -39,8 +39,6 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
 
         builder.Property(g => g.WinnerId);
 
-        builder.Property(g => g.WinningLine)
-            .HasColumnType("jsonb");
 
         builder.Property(g => g.CreatedAt)
             .IsRequired();

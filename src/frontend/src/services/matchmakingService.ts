@@ -30,7 +30,24 @@ export interface InvitationAcceptedData {
   accepterId: string
 }
 
-class MatchmakingService {
+export class MatchmakingService {
+      async forfeitGame(gameId: string, playerId: string): Promise<any> {
+        const token = authService.getToken();
+        const response = await fetch(`${BASE_URL}/api/game/${gameId}/forfeit`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ gameId, playerId })
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Erreur lors de l\'abandon de la partie');
+        }
+        return response.json();
+      }
+    private onOpponentLeftCallback: ((userId: string) => void) | null = null
   private connection: signalR.HubConnection | null = null
   private onMatchFoundCallback: ((data: MatchFoundData) => void) | null = null
   private onGameInvitationCallback: ((data: GameInvitationData) => void) | null = null
@@ -45,6 +62,13 @@ class MatchmakingService {
     return this.connection
   }
 
+  invoke(method: string, ...args: any[]): Promise<any> {
+    if (!this.connection) {
+      return Promise.reject('Pas de connexion SignalR')
+    }
+    return this.connection.invoke(method, ...args)
+  }
+
   async initializeConnection(): Promise<void> {
     const token = authService.getToken()
     if (!token) {
@@ -57,6 +81,16 @@ class MatchmakingService {
       })
       .withAutomaticReconnect()
       .build()
+
+    this.connection.on("OpponentLeft", (userId: string) => {
+      console.log("⚠️ [SignalR] OpponentLeft reçu !", userId)
+      if (this.onOpponentLeftCallback) {
+        console.log("[DEBUG matchmakingService] OpponentLeft callback appelé", userId)
+        this.onOpponentLeftCallback(userId)
+      } else {
+        console.log("[DEBUG matchmakingService] OpponentLeft callback NON configuré")
+      }
+    })
 
     this.connection.on("MatchFound", (data: MatchFoundData) => {
       console.log("Match trouvé !", data)
@@ -145,6 +179,9 @@ class MatchmakingService {
 
   onRematchDeclined(callback: (data: any) => void): void {
     this.onRematchDeclinedCallback = callback
+  }
+  onOpponentLeft(callback: (userId: string) => void): void {
+    this.onOpponentLeftCallback = callback
   }
   onMatchFound(callback: (data: MatchFoundData) => void): void {
     this.onMatchFoundCallback = callback

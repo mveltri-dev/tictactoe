@@ -30,7 +30,7 @@ export function StatusDisplay({
       return "Match Nul !"
     }
     if (winner) {
-      if (gameMode === "local" && player1Name && player2Name) {
+      if ((gameMode === "local" || gameMode === "friend") && player1Name && player2Name) {
         return `${winner === "X" ? player1Name : player2Name} gagne !`
       }
       if (gameMode === "ai") {
@@ -42,7 +42,7 @@ export function StatusDisplay({
     if (isAiTurn) {
       return "Au tour d'EasiBot"
     }
-    if (gameMode === "local" && player1Name && player2Name) {
+    if ((gameMode === "local" || gameMode === "friend") && player1Name && player2Name) {
       return `Tour de ${currentPlayer === "X" ? player1Name : player2Name}`
     }
     if (gameMode === "ai") {
@@ -74,7 +74,7 @@ export function StatusDisplay({
             exit={{ scale: 0, rotate: 180 }}
             transition={{ type: "spring", stiffness: 200 } as const}
           >
-            <Trophy className={styles.status__trophy} />
+            <Trophy className={cn(styles.status__trophy, winner === "X" ? styles["status__text--x"] : winner === "O" ? styles["status__text--o"] : undefined)} />
           </motion.div>
         )}
       </AnimatePresence>

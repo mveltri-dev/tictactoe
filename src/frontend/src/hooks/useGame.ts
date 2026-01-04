@@ -8,6 +8,8 @@ interface GameConfig {
   player2Name: string
   chosenSymbol: Symbol
   gameMode: GameModeAPI
+  width: number
+  height: number
 }
 
 interface Scores {
@@ -37,7 +39,7 @@ interface UseGameReturn {
   currentPlayerSymbol: Symbol | null
 }
 
-export function useGame(): UseGameReturn {
+export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameReturn {
   const [game, setGame] = useState<GameDTO | null>(null)
   const [config, setConfig] = useState<GameConfig | null>(null)
   const [appState, setAppState] = useState<AppState>("configuration")
@@ -81,14 +83,15 @@ export function useGame(): UseGameReturn {
     }
   }, [])
 
+
+  // Déclaration de createGame AVANT le useEffect d'auto-restart
+
   // Auto-restart après fin de partie
   useEffect(() => {
     if (game && game.status !== "InProgress") {
       setAppState("finished")
-      
-      // Mettre à jour les scores SEULEMENT si le statut vient de changer
-      // (évite de compter 2 fois quand setGame est appelé plusieurs fois)
-      if (previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null) {
+      // Mettre à jour les scores SEULEMENT si le statut vient de changer ET en mode local/IA
+      if ((config?.gameMode === "VsComputer" || config?.gameMode === "VsPlayerLocal") && (previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null)) {
         if (game.status === "XWins") {
           setScores(prev => ({ ...prev, X: prev.X + 1 }))
         } else if (game.status === "OWins") {
@@ -98,51 +101,70 @@ export function useGame(): UseGameReturn {
         }
       }
       previousGameStatusRef.current = game.status
-
-      // Auto-restart après 2 secondes SEULEMENT pour les modes locaux
-      // Les parties en ligne ne peuvent pas être recréées automatiquement
+      // Auto-restart après 2 secondes SEULEMENT pour les modes locaux, sans flash (pas de passage par null ni loading)
       if (config?.gameMode !== "VsPlayerOnline") {
-        autoRestartTimeoutRef.current = setTimeout(() => {
+        autoRestartTimeoutRef.current = setTimeout(async () => {
           if (config) {
-            setAppState("loading")
-            setTimeout(() => {
-              createGame({
-                player1Name: config.player1Name,
-                player2Name: config.player2Name,
-                chosenSymbol: config.chosenSymbol,
-                gameMode: config.gameMode
-              })
-            }, 500)
+            // Inclure la taille du plateau pour la nouvelle partie
+            const newGame = await createGame({
+              player1Name: config.player1Name,
+              player2Name: config.player2Name,
+              chosenSymbol: config.chosenSymbol,
+              gameMode: config.gameMode,
+              width: config.width,
+              height: config.height
+            })
+            if (newGame && onAutoRestarted) {
+              onAutoRestarted(newGame.id)
+            }
           }
         }, 2000)
       }
     }
-
     return () => {
       if (autoRestartTimeoutRef.current) {
         clearTimeout(autoRestartTimeoutRef.current)
       }
     }
-  }, [game?.status, config])
+  }, [game?.status, config, onAutoRestarted])
 
   const createGame = useCallback(async (request: CreateGameRequest): Promise<GameDTO | null> => {
     try {
-      setAppState("loading")
       setError(null)
-      
-      // Sauvegarder la config locale (pour les noms)
+      // Toujours initialiser la config locale (pour toutes les parties)
       const newConfig: GameConfig = {
         player1Name: request.player1Name || "Joueur 1",
         player2Name: request.player2Name || (request.gameMode === "VsComputer" ? "EasiBot" : "Joueur 2"),
         chosenSymbol: request.chosenSymbol,
-        gameMode: request.gameMode
+        gameMode: request.gameMode,
+        width: request.width ?? 3,
+        height: request.height ?? 3
       }
       setConfig(newConfig)
-      
+      if (request.gameMode === "VsPlayerOnline") {
+        setError(null)
+        setAppState("loading")
+      }
       const newGame = await api.createGame(request)
       setGame(newGame)
       previousGameStatusRef.current = "InProgress"
       setAppState("playing")
+
+      // Si c'est une partie contre l'IA et que le joueur humain a choisi O, l'IA doit jouer en premier
+      if (
+        request.gameMode === "VsComputer" &&
+        request.chosenSymbol === "O" &&
+        newGame.currentTurn === "X"
+      ) {
+        // L'IA doit jouer tout de suite
+        await new Promise(resolve => setTimeout(resolve, 1200))
+        const gameAfterAi = await api.playAiMove(newGame.id)
+        setGame(gameAfterAi)
+        if (gameAfterAi.status !== "InProgress") {
+          setAppState("finished")
+        }
+      }
+
       return newGame
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la partie")
@@ -160,8 +182,13 @@ export function useGame(): UseGameReturn {
       setGame(loadedGame)
       
       // Créer une config basée sur les données de la partie
-      const playerXName = loadedGame.playerXName || "Joueur X"
-      const playerOName = loadedGame.playerOName || "Joueur O"
+      // Pour le mode online, ne jamais fallback sur 'Joueur X' ou 'Joueur O' si le nom n'est pas fourni
+      const playerXName = loadedGame.mode === "VsPlayerOnline"
+        ? (loadedGame.playerXName || "?")
+        : (loadedGame.playerXName || "Joueur X")
+      const playerOName = loadedGame.mode === "VsPlayerOnline"
+        ? (loadedGame.playerOName || "?")
+        : (loadedGame.playerOName || "Joueur O")
       
       // Déterminer le symbole du joueur actuel pour les parties online
       let chosenSymbol: Symbol = "X" // Par défaut
@@ -196,12 +223,24 @@ export function useGame(): UseGameReturn {
         }
       }
       
-      setConfig({
-        player1Name: playerXName,
-        player2Name: playerOName,
-        chosenSymbol,
-        gameMode: loadedGame.mode as GameModeAPI
-      })
+      // Pour les parties locales, NE PAS écraser la config locale
+      if (loadedGame.mode === "VsComputer" || loadedGame.mode === "VsPlayerLocal") {
+        // Mettre à jour la config locale AVEC la taille du plateau du backend
+        setConfig((prev) => ({
+          ...prev!,
+          width: loadedGame.width ?? 3,
+          height: loadedGame.height ?? 3
+        }))
+      } else {
+        setConfig({
+          player1Name: playerXName,
+          player2Name: playerOName,
+          chosenSymbol,
+          gameMode: loadedGame.mode as GameModeAPI,
+          width: loadedGame.width ?? 3,
+          height: loadedGame.height ?? 3
+        })
+      }
       previousGameStatusRef.current = loadedGame.status
       setAppState(loadedGame.status === "InProgress" ? "playing" : "finished")
     } catch (err) {
@@ -215,36 +254,30 @@ export function useGame(): UseGameReturn {
     if (!game || !config) return
 
     try {
-      setAppState("loading")
       setError(null)
-      
       // 1. Faire le coup du joueur
       const updatedGame = await api.makeMove({
         gameId: game.id,
         playerId,
         position
       })
-      
       // 2. Afficher immédiatement le coup du joueur
       setGame(updatedGame)
       setAppState("playing")
-      
-      // 3. Si la partie continue et c'est le mode IA, attendre puis faire jouer l'IA
-      if (updatedGame.status === "InProgress" && config.gameMode === "VsComputer") {
+      // 3. Tant que c'est à l'IA de jouer, enchaîner les coups IA (utile si l'IA doit jouer plusieurs fois de suite)
+      let nextGame = updatedGame;
+      while (
+        nextGame.status === "InProgress" &&
+        config.gameMode === "VsComputer" &&
+        config.chosenSymbol !== nextGame.currentTurn
+      ) {
         console.log('IA va jouer dans 1200ms...')
-        // Attendre 1200ms pour que l'utilisateur voie son coup
         await new Promise(resolve => setTimeout(resolve, 1200))
-        
-        console.log('IA joue maintenant, gameId:', updatedGame.id)
-        // Déclencher le coup de l'IA
-        const gameAfterAi = await api.playAiMove(updatedGame.id)
-        setGame(gameAfterAi)
-        
-        // Vérifier si la partie est terminée après le coup de l'IA
-        if (gameAfterAi.status !== "InProgress") {
-          setAppState("finished")
-        }
-      } else if (updatedGame.status !== "InProgress") {
+        console.log('IA joue maintenant, gameId:', nextGame.id)
+        nextGame = await api.playAiMove(nextGame.id)
+        setGame(nextGame)
+      }
+      if (nextGame.status !== "InProgress") {
         setAppState("finished")
       }
     } catch (err) {

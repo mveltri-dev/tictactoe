@@ -25,5 +25,39 @@
 .cell--winning {
   background-color: hsl(var(--primary) / 0.1);
   border-color: hsl(var(--primary));
+  border-width: 3px;
   box-shadow: 0 10px 15px -3px hsl(var(--shadow-color));
+  animation: winningPulse 1.2s ease-in-out infinite;
+}
+
+.cell--winning.cell--x {
+  border-color: hsl(var(--game-x));
+  box-shadow: 0 0 20px hsl(var(--game-x) / 0.4);
+}
+
+.cell--winning.cell--o {
+  border-color: hsl(var(--game-o));
+  box-shadow: 0 0 20px hsl(var(--game-o) / 0.4);
+}
+
+@keyframes winningBlink {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.12);
+    filter: brightness(1.5);
+  }
+}
+
+@keyframes winningPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
 }

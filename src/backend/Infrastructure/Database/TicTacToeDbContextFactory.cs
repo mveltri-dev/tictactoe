@@ -12,9 +12,24 @@ public class TicTacToeDbContextFactory : IDesignTimeDbContextFactory<TicTacToeDb
 {
     public TicTacToeDbContext CreateDbContext(string[] args)
     {
-        // Charger le fichier .env depuis le dossier backend
-        var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
-        Env.Load(envPath);
+        // Chargement robuste du fichier .env pour tous contextes (local, design-time, cloud)
+        var possibleEnvPaths = new[] {
+            Path.Combine(Directory.GetCurrentDirectory(), "..", ".env"),
+            Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+            Path.Combine(AppContext.BaseDirectory, ".env"),
+            Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "", ".env")
+        };
+        Console.WriteLine("---------------------------Chemins testés pour .env :");
+        foreach (var path in possibleEnvPaths)
+        {
+            Console.WriteLine($"  - {path} (existe: {File.Exists(path)})");
+            if (File.Exists(path))
+            {
+                Env.Load(path);
+                Console.WriteLine($"Fichier .env chargé depuis : {path}");
+                break;
+            }
+        }
 
         var host = Environment.GetEnvironmentVariable("DB_HOST");
         var user = Environment.GetEnvironmentVariable("DB_USER");

@@ -7,23 +7,26 @@ interface GameBoardProps {
   onCellClick: (index: number) => void
   winningLine?: number[]
   disabled?: boolean
+  rows?: number
+  cols?: number
 }
 
-// Calculer la position et l'angle de la ligne gagnante
-const getWinningLineStyle = (winningLine: number[]) => {
-  if (winningLine.length !== 3) return null
+// Calculer la position et l'angle de la ligne gagnante pour une grille NxM
+const getWinningLineStyle = (winningLine: number[], rows: number, cols: number) => {
+  if (winningLine.length < 2) return null
 
-  // Positions des cellules dans une grille 3x3 (centres des cellules)
-  const cellPositions = [
-    { x: 16.67, y: 16.67 }, { x: 50, y: 16.67 }, { x: 83.33, y: 16.67 },
-    { x: 16.67, y: 50 }, { x: 50, y: 50 }, { x: 83.33, y: 50 },
-    { x: 16.67, y: 83.33 }, { x: 50, y: 83.33 }, { x: 83.33, y: 83.33 }
-  ]
+  // Calcule la position centrale de chaque cellule en %
+  const getCellCenter = (index: number) => {
+    const row = Math.floor(index / cols)
+    const col = index % cols
+    const x = ((col + 0.5) / cols) * 100
+    const y = ((row + 0.5) / rows) * 100
+    return { x, y }
+  }
 
-  const start = cellPositions[winningLine[0]]
-  const end = cellPositions[winningLine[2]]
+  const start = getCellCenter(winningLine[0])
+  const end = getCellCenter(winningLine[winningLine.length - 1])
 
-  // Calculer l'angle et la longueur
   const dx = end.x - start.x
   const dy = end.y - start.y
   const length = Math.sqrt(dx * dx + dy * dy)
@@ -42,37 +45,47 @@ export function GameBoard({
   board, 
   onCellClick, 
   winningLine = [],
-  disabled = false 
+  disabled = false,
+  rows,
+  cols
 }: GameBoardProps) {
-  const lineStyle = winningLine.length === 3 ? getWinningLineStyle(winningLine) : null
+  // Déduire la taille si non fournie, mais loguer pour debug
+  const nRows = rows || Math.sqrt(board.length)
+  const nCols = cols || Math.ceil(board.length / (rows || Math.sqrt(board.length)))
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log(`[GameBoard] board.length=${board.length}, rows=${rows}, cols=${cols}, nRows=${nRows}, nCols=${nCols}`)
+    // Log de la ligne gagnante à chaque rendu
+    console.log('[GameBoard] winningLine:', winningLine)
+  }
+  // Correction : si board.length !== nRows * nCols, afficher un warning
+  if (typeof window !== "undefined" && nRows * nCols !== board.length) {
+    // eslint-disable-next-line no-console
+    console.warn(`[GameBoard] Incohérence : board.length=${board.length} mais nRows*nCols=${nRows * nCols}`)
+  }
+  const lineStyle = winningLine.length >= 2 ? getWinningLineStyle(winningLine, nRows, nCols) : null
 
   return (
     <motion.div 
       className={styles.board}
+      style={{
+        gridTemplateColumns: `repeat(${nCols}, 1fr)`
+      }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 } as const}
     >
-      {board.map((cell, index) => (
+      {Array.from({ length: nRows * nCols }).map((_, index) => (
         <GameCell
           key={index}
-          value={cell as "X" | "O" | null}
+          value={board[index] as "X" | "O" | null}
           onClick={() => onCellClick(index)}
           isWinning={winningLine.includes(index)}
           disabled={disabled}
         />
       ))}
 
-      {/* Ligne gagnante */}
-      {lineStyle && (
-        <motion.div
-          className={styles.winning_line}
-          style={lineStyle}
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" } as const}
-        />
-      )}
+      {/* Surbrillance des cases gagnantes uniquement, pas de ligne visuelle */}
     </motion.div>
   )
 }

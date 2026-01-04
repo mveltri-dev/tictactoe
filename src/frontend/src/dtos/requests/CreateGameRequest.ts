@@ -7,4 +7,6 @@ export interface CreateGameRequest {
   chosenSymbol: Symbol
   gameMode: GameModeAPI
   player2Name?: string | null
+  width?: number
+  height?: number
 }

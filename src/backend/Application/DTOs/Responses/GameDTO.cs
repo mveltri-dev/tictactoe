@@ -52,10 +52,10 @@ public class GameDTO
     /// </summary>
     public Guid? WinnerId { get; set; }
 
-    /// <summary>
-    /// Positions des cases formant la ligne gagnante (index 0-8), ou null si pas de gagnant.
-    /// </summary>
-    public int[]? WinningLine { get; set; }
+        /// <summary>
+        /// Positions des cases formant la ligne gagnante (index 0-8), ou null si pas de gagnant.
+        /// </summary>
+        public int[]? WinningLine { get; set; }
 
     /// <summary>
     /// Date et heure de création de la partie.
@@ -66,4 +66,14 @@ public class GameDTO
     /// Mode de jeu : "VsComputer", "VsPlayerLocal" ou "VsPlayerOnline".
     /// </summary>
     public required string Mode { get; set; }
+
+    /// <summary>
+    /// Largeur du plateau (nombre de colonnes).
+    /// </summary>
+    public int Width { get; set; }
+
+    /// <summary>
+    /// Hauteur du plateau (nombre de lignes).
+    /// </summary>
+    public int Height { get; set; }
 }

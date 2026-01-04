@@ -51,6 +51,20 @@ public class GameHub : Hub
         if (userId != null)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId}");
+            // Notifier les autres joueurs de la partie si applicable
+            if (Context.Items.TryGetValue("gameId", out var gameIdObj) && gameIdObj is string gameId)
+            {
+                Console.WriteLine($"[SignalR Hub] OnDisconnectedAsync: OpponentLeft envoyé au groupe game_{gameId} pour userId={userId}");
+                await Clients.Group($"game_{gameId}").SendAsync("OpponentLeft", userId);
+            }
+            else
+            {
+                Console.WriteLine($"[SignalR Hub] OnDisconnectedAsync: Pas de gameId dans Context.Items pour userId={userId}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("[SignalR Hub] OnDisconnectedAsync: userId est NULL");
         }
         await base.OnDisconnectedAsync(exception);
     }
@@ -77,6 +91,8 @@ public class GameHub : Hub
     public async Task JoinGame(string gameId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"game_{gameId}");
+        // Stocker le gameId dans Context.Items pour le récupérer lors de la déconnexion
+        Context.Items["gameId"] = gameId;
     }
 
     /// <summary>
@@ -85,6 +101,16 @@ public class GameHub : Hub
     public async Task LeaveGame(string gameId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"game_{gameId}");
+        var userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (userId != null)
+        {
+            Console.WriteLine($"[SignalR Hub] LeaveGame: OpponentLeft envoyé au groupe game_{gameId} pour userId={userId}");
+            await Clients.Group($"game_{gameId}").SendAsync("OpponentLeft", userId);
+        }
+        else
+        {
+            Console.WriteLine($"[SignalR Hub] LeaveGame: userId est NULL pour gameId={gameId}");
+        }
     }
 }
 

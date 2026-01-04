@@ -37,4 +37,16 @@ public class CreateGameRequest
     [StringLength(50, MinimumLength = 1, ErrorMessage = "Le nom doit contenir entre 1 et 50 caractères.")]
     [RegularExpression(@"^[a-zA-Z0-9àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\s-]+$", ErrorMessage = "Le nom ne peut contenir que des lettres, chiffres, espaces et tirets.")]
     public string? Player2Name { get; set; }
+
+    /// <summary>
+    /// Largeur du plateau (nombre de colonnes, minimum 3, défaut 3).
+    /// </summary>
+    [Range(3, 20, ErrorMessage = "La largeur du plateau doit être comprise entre 3 et 20.")]
+    public int Width { get; set; } = 3;
+
+    /// <summary>
+    /// Hauteur du plateau (nombre de lignes, minimum 3, défaut 3).
+    /// </summary>
+    [Range(3, 20, ErrorMessage = "La hauteur du plateau doit être comprise entre 3 et 20.")]
+    public int Height { get; set; } = 3;
 }
