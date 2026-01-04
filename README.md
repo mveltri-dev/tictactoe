@@ -168,7 +168,7 @@ curl -X POST http://localhost:5000/api/game/{id}/move \
 # L'IA joue
 curl -X POST http://localhost:5000/api/game/{id}/ai-move
 ```
-
+ 
 ## Documentation Technique
 
 Documentation détaillée disponible dans `/docs` :
