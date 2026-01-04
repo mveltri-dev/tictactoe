@@ -109,11 +109,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:5173"
+                Environment.GetEnvironmentVariable("FRONTEND_AZURE_URL") ?? Env.GetString("FRONTEND_AZURE_URL")
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Nécessaire pour SignalR
+              .AllowCredentials(); 
     });
 });
 
