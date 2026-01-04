@@ -38,6 +38,9 @@ obj/
 
 # Logs
 *.log
+
+# Documentation explicative locale
+explication-code/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
