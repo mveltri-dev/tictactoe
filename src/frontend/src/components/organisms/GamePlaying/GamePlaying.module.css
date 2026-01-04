@@ -1,0 +1,197 @@
+/* Label du mode de jeu */
+.mode_label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: hsl(var(--primary));
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+/* GamePlaying - Organism */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.scores {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+}
+
+.error {
+  width: 100%;
+  padding: 1rem;
+  background-color: hsl(var(--destructive) / 0.1);
+  border: 1px solid hsl(var(--destructive) / 0.2);
+  border-radius: 0.5rem;
+  color: hsl(var(--destructive));
+  text-align: center;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.05) 100%);
+  border: 2px solid hsl(var(--primary) / 0.3);
+  border-radius: 1rem;
+  margin-top: 2rem;
+}
+
+.loading__spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 4px solid hsl(var(--primary) / 0.3);
+  border-top-color: hsl(var(--primary));
+  border-radius: 9999px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading__text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
+
+.loading__subtext {
+  font-size: 0.875rem;
+  color: hsl(var(--foreground) / 0.6);
+  text-align: center;
+}
+
+.onlineControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 28rem;
+  margin-top: 1rem;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.statusMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.05) 100%);
+  border: 1px solid hsl(var(--primary) / 0.3);
+  border-radius: 0.5rem;
+  color: hsl(var(--primary));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statusMessageError {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background-color: hsl(var(--destructive) / 0.1);
+  border: 1px solid hsl(var(--destructive) / 0.3);
+  border-radius: 0.5rem;
+  color: hsl(var(--destructive));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.controlButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.confirm_dialog {
+  background: #23182e;
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+.confirm_message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  color: #fff;
+  font-weight: 500;
+}
+.confirm_actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.confirm_yes {
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.confirm_yes:disabled {
+  background: #b71c1c;
+  cursor: not-allowed;
+}
+.confirm_no {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.confirm_no:hover {
+  background: #fff;
+  color: #23182e;
+}
+.leave_container {
+  position: relative;
+}

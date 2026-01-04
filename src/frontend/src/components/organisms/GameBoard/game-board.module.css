@@ -1,0 +1,10 @@
+.winning_cell {
+  animation: blink 1s linear infinite;
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.7);
+  border-radius: 0.5rem;
+}
+
+@keyframes blink {
+  0%, 100% { background: hsl(var(--primary) / 0.15); }
+  50% { background: hsl(var(--primary) / 0.5); }
+}

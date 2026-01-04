@@ -1,0 +1,225 @@
+/* LoginForm - Molecule */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+
+.modal {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 28rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal__decoration--top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8rem;
+  height: 8rem;
+  background-color: hsl(var(--primary) / 0.1);
+  border-radius: 9999px;
+  filter: blur(48px);
+}
+
+.modal__decoration--bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 6rem;
+  height: 6rem;
+  background-color: hsl(var(--secondary) / 0.1);
+  border-radius: 9999px;
+  filter: blur(32px);
+}
+
+.modal__close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: transparent;
+  border: none;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal__close:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--foreground));
+}
+
+.modal__close_icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.modal__content {
+  position: relative;
+}
+
+.modal__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.modal__avatar {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  border-radius: 1rem;
+  background-color: hsl(var(--primary) / 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__avatar_icon {
+  width: 2rem;
+  height: 2rem;
+  color: hsl(var(--primary));
+}
+
+.modal__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.modal__subtitle {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form__error {
+  padding: 0.75rem;
+  background-color: hsl(var(--destructive) / 0.1);
+  border: 1px solid hsl(var(--destructive) / 0.3);
+  border-radius: 0.5rem;
+  color: hsl(var(--destructive));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form__label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.5rem;
+}
+
+.form__input_wrapper {
+  position: relative;
+}
+
+.form__icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.form__icon_right {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0.375rem;
+}
+
+.form__icon_right:hover {
+  background-color: hsl(var(--muted) / 0.5);
+  color: hsl(var(--foreground));
+}
+
+.form__icon_right:active {
+  background-color: hsl(var(--muted));
+}
+
+.form__input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border-radius: 0.75rem;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--input));
+  color: hsl(var(--foreground));
+  transition: all 0.2s ease;
+}
+
+.form__input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.form__input:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5);
+}
+
+.form__submit {
+  padding-top: 1rem;
+}
+
+.form__submit_button {
+  width: 100%;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.footer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.footer__toggle {
+  font-size: 0.875rem;
+  color: hsl(var(--primary));
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.footer__toggle:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,45 @@
+/* GameHeader - Organism */
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.header_right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .header_right {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  text-wrap: balance;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.125rem;
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 2.25rem;
+  }
+  
+  .subtitle {
+    font-size: 0.875rem;
+  }
+}
