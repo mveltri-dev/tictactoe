@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { api } from "../services/api"
 import { matchmakingService } from "../services/matchmakingService"
+import { authService } from "../services/authService"
 import type { GameDTO, CreateGameRequest, AppState, Symbol, GameModeAPI } from "../dtos"
 
 interface GameConfig {
@@ -194,7 +195,6 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
       let chosenSymbol: Symbol = "X" // Par défaut
       if (loadedGame.mode === "VsPlayerOnline") {
         // Pour les parties online, récupérer le userId du token
-        const { authService } = await import("../services/authService")
         const userId = authService.getUserIdFromToken()
         
         if (userId) {

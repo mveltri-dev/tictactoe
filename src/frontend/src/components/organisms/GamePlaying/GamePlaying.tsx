@@ -40,6 +40,7 @@ interface GamePlayingProps {
   onNewGame: () => void
   onRestart: () => void
   modeLabel?: GameModeAPI
+  isSoundEnabled: boolean
 }
 
 // Map API mode to local mode
@@ -62,7 +63,8 @@ export function GamePlaying({
   onCellClick,
   onNewGame,
   onRestart,
-  modeLabel
+  modeLabel,
+  isSoundEnabled
 }: GamePlayingProps) {
   const { play } = useSoundEffects()
 
