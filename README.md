@@ -56,7 +56,7 @@ npm run dev
 ```
 
 L'application sera accessible sur `http://localhost:5173`
-
+ 
 ## Fonctionnalités
 
 ### Modes de jeu
