@@ -24,6 +24,11 @@ jobs:
           lfs: false
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
+
+      - name: Create .env file from secrets
+        run: |
+          echo "VITE_API_AZURE_URL=${{ secrets.VITE_API_AZURE_URL }}" > src/frontend/.env
+
       - name: Get Id Token
         uses: actions/github-script@v6
         id: idtoken
