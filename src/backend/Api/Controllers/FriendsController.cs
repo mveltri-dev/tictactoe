@@ -60,7 +60,7 @@ public class FriendsController : ControllerBase
                 (g.PlayerOId == friend.Id && g.Status == GameStatus.XWins)
             );
             var draws = games.Count(g => g.Status == GameStatus.Draw);
-            var score = (wins * 3) + draws - losses;
+            var score = Math.Max(0, (wins * 3) + draws - losses);
             var winRate = games.Count > 0 ? (double)wins / games.Count * 100 : 0;
             
             friends.Add(new
@@ -367,7 +367,7 @@ public class FriendsController : ControllerBase
                 (g.PlayerOId == u.Id && g.Status == GameStatus.XWins)
             );
             var userDraws = userGames.Count(g => g.Status == GameStatus.Draw);
-            var userScore = (userWins * 3) + userDraws - userLosses;
+            var userScore = Math.Max(0, (userWins * 3) + userDraws - userLosses);
             
             userScores.Add((u.Id, userScore));
         }

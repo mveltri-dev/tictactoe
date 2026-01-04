@@ -46,7 +46,7 @@ namespace Api.Controllers
                 var draws = userGames.Count(g => g.Status == Domain.Enums.GameStatus.Draw);
                 var gamesPlayed = userGames.Count;
                 var winRate = gamesPlayed > 0 ? (double)wins / gamesPlayed * 100 : 0;
-                var score = (wins * 3) + (draws * 1) - (losses * 1);
+                var score = Math.Max(0, (wins * 3) + (draws * 1) - (losses * 1));
 
                 leaderboard.Add(new
                 {
@@ -136,7 +136,7 @@ namespace Api.Controllers
         var winRate = gamesPlayed > 0 ? (double)wins / gamesPlayed * 100 : 0;
 
         // Score pondéré : (victoires × 3) + (nuls × 1) - (défaites × 1)
-        var score = (wins * 3) + (draws * 1) - (losses * 1);
+        var score = Math.Max(0, (wins * 3) + (draws * 1) - (losses * 1));
 
         // Calculer le rang basé sur le score
         int rank;
@@ -163,7 +163,7 @@ namespace Api.Controllers
                 (g.PlayerOId == u.Id && g.Status == Domain.Enums.GameStatus.XWins)
             );
             var userDraws = userGames.Count(g => g.Status == Domain.Enums.GameStatus.Draw);
-            var userScore = (userWins * 3) + (userDraws * 1) - (userLosses * 1);
+            var userScore = Math.Max(0, (userWins * 3) + (userDraws * 1) - (userLosses * 1));
             
             userScores.Add((u.Id, userScore, userGames.Count));
         }
