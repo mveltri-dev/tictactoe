@@ -60,6 +60,10 @@ var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? Env.GetString("JWT_ISSUER") ?? "TicTacToeApi";
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? Env.GetString("JWT_AUDIENCE") ?? "TicTacToeClient";
 
+// LOG DEBUG
+Console.WriteLine($"@@@@++++++++++DEBUG++++ [Program.cs] JWT_SECRET used for validation: {jwtSecret}");
+Console.WriteLine($"@@@@++++++++++DEBUG++++ [Program.cs] JWT_ISSUER: {jwtIssuer}, JWT_AUDIENCE: {jwtAudience}");
+
 builder.Configuration["Jwt:Secret"] = jwtSecret;
 builder.Configuration["Jwt:Issuer"] = jwtIssuer;
 builder.Configuration["Jwt:Audience"] = jwtAudience;
@@ -109,7 +113,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-                Environment.GetEnvironmentVariable("FRONTEND_AZURE_URL") ?? Env.GetString("FRONTEND_AZURE_URL")
+                Environment.GetEnvironmentVariable("FRONTEND_AZURE_URL") ?? Env.GetString("FRONTEND_LOCAL_URL")
               )
               .AllowAnyHeader()
               .AllowAnyMethod()

@@ -134,6 +134,10 @@ public class AuthService
         var jwtIssuer = _configuration["Jwt:Issuer"] ?? "TicTacToeApi";
         var jwtAudience = _configuration["Jwt:Audience"] ?? "TicTacToeClient";
 
+        // LOG DEBUG
+        Console.WriteLine($"@@@@++++++++++DEBUG++++ [AuthService] JWT_SECRET used for token generation: {jwtSecret}");
+        Console.WriteLine($"@@@@++++++++++DEBUG++++ [AuthService] JWT_ISSUER: {jwtIssuer}, JWT_AUDIENCE: {jwtAudience}");
+
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -153,6 +157,8 @@ public class AuthService
             signingCredentials: credentials
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        Console.WriteLine($"@@@@++++++++++DEBUG++++ [AuthService] JWT generated: {tokenString}");
+        return tokenString;
     }
 }
