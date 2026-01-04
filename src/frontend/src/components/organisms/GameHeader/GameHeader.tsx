@@ -23,7 +23,7 @@ export function GameHeader({ isSoundEnabled, onSoundToggle, language, onLanguage
     >
       <div>
         <h1 className={styles.title}>Tic-Tac-Toe</h1>
-        <p className={styles.subtitle}>Propulsé par Easi</p>
+        <p className={styles.subtitle}>Proposé par Easi</p>
       </div>
       <div className={styles.header_right}>
         <SettingsMenu

@@ -115,7 +115,7 @@ export function App() {
   // Si on est sur /game/:id mais qu'il y a une erreur de chargement, rediriger vers la configuration
   useEffect(() => {
     if (location.pathname.startsWith('/game/') && !game && appState === "error") {
-      console.log('⚠️ Redirection vers / car erreur de chargement de la partie')
+      console.log('Redirection vers / car erreur de chargement de la partie')
       navigate('/')
     }
   }, [location.pathname, game, appState, navigate])
@@ -199,10 +199,7 @@ export function App() {
   }
 
   const handleGameFound = (gameId: string, opponentUsername: string, yourSymbol: "X" | "O") => {
-    console.log('🎯 Match trouvé !', { gameId, opponentUsername, yourSymbol })
-    console.log('🔄 Navigation vers /game/' + gameId)
     navigate(`/game/${gameId}`)
-    console.log('✅ Navigate appelé, pathname devrait changer')
   }
 
   const handleStartGameAuto = async (mode: GameModeAPI, symbol: "X" | "O") => {
@@ -211,8 +208,6 @@ export function App() {
       player2Name: mode === "VsComputer" ? "EasiBot" : "Joueur 2",
       chosenSymbol: symbol,
       gameMode: mode,
-      width: 3,
-      height: 3
     })
     if (newGame) {
       navigate(`/game/${newGame.id}`)
@@ -238,7 +233,7 @@ export function App() {
     if (!game || !config) return
     // Utiliser le playerId correspondant au symbole actuel (currentTurn)
     const playerId = game.currentTurn === "X" ? game.playerXId : game.playerOId
-    console.log('🎯 Coup joué:', { position, currentTurn: game.currentTurn, playerId })
+    console.log('Coup joué:', { position, currentTurn: game.currentTurn, playerId })
     await makeMove(position, playerId)
   }
 

@@ -234,7 +234,7 @@ export function GamePlaying({
       setRematchStatus('waiting')
       setPendingGameId(result.gameId)
     } catch (error) {
-      console.error('❌ Erreur lors de la réinvitation:', error)
+      console.error('Erreur lors de la réinvitation:', error)
       setRematchStatus('opponent-left')
     }
   }
@@ -545,7 +545,7 @@ export function GamePlaying({
     </div>
   )
   } catch (err) {
-    console.error("❌ ERREUR dans GamePlaying:", err)
+    console.error("ERREUR dans GamePlaying:", err)
     return (
       <div style={{ color: 'red', padding: '20px' }}>
         <h2>Erreur dans GamePlaying</h2>

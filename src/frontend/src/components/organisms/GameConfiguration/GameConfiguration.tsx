@@ -6,6 +6,9 @@ import type { Symbol, GameModeAPI } from "../../../dtos"
 import { cn } from "@/lib/utils"
 import styles from "./GameConfiguration.module.css"
 
+export const BOARD_WIDTH = 3; 
+export const BOARD_HEIGHT = 3; 
+
 interface GameConfigurationProps {
   gameMode: GameModeAPI
   onStartGame: (config: {
@@ -13,6 +16,8 @@ interface GameConfigurationProps {
     player2Name: string
     chosenSymbol: Symbol
     gameMode: GameModeAPI
+    width: number
+    height: number
   }) => void
 }
 
@@ -21,13 +26,19 @@ export function GameConfiguration({ gameMode, onStartGame }: GameConfigurationPr
   const [player2Name, setPlayer2Name] = useState("")
   const [chosenSymbol, setChosenSymbol] = useState<Symbol>("X")
 
+  // Utilisation des constantes pour la taille du plateau
+  const width = BOARD_WIDTH;
+  const height = BOARD_HEIGHT;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onStartGame({
       player1Name: player1Name || "Joueur 1",
       player2Name: gameMode === "VsComputer" ? "EasiBot" : player2Name || "Joueur 2",
       chosenSymbol: gameMode === "VsPlayerLocal" ? "X" : chosenSymbol,
-      gameMode
+      gameMode,
+      width,
+      height
     })
   }
 
@@ -94,7 +105,9 @@ export function GameConfiguration({ gameMode, onStartGame }: GameConfigurationPr
             player1Name: "Joueur 1",
             player2Name: "EasiBot",
             chosenSymbol: chosenSymbol,
-            gameMode: "VsComputer"
+            gameMode: "VsComputer",
+            width,
+            height
           })} 
           variant="primary"
           className={styles.submit_button}

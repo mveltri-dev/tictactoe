@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Settings, Sun, Moon, Volume2, VolumeX, Globe, BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
+import { Settings, Sun, Moon, Volume2, VolumeX, Globe, BookOpen, ChevronLeft, ChevronRight, GamepadDirectional } from "lucide-react"
 import { useTheme } from "@/contexts/ThemeContext"
 import { cn } from "@/lib/utils"
 import styles from "./SettingsMenu.module.css"
+import { BOARD_WIDTH, BOARD_HEIGHT } from "../GameConfiguration/GameConfiguration";
 
 interface SettingsMenuProps {
   isSoundEnabled: boolean
@@ -53,8 +54,10 @@ export function SettingsMenu({ isSoundEnabled, onSoundToggle, language, onLangua
       <div className={styles.rules_section}>
         <h4 className={styles.rules_section__title}>Personnalisation du plateau</h4>
         <p className={styles.rules_section__text}>
-          Vous pouvez choisir la taille de la grille dans les paramètres. <br />
-          <strong>La règle d’alignement reste toujours 3 symboles</strong>, quelle que soit la taille du plateau.
+          La taille du plateau est actuellement de : <strong>{BOARD_WIDTH} x {BOARD_HEIGHT}</strong> cases et peut varier.<br />
+          Elle est affichée dans les paramètres, mais n’est pas modifiable via l’interface.<br /><br />
+          <strong>Pour gagner, il faut aligner autant de pions que le plus petit côté du plateau.</strong><br />
+          Par exemple, sur un plateau de {BOARD_WIDTH} x {BOARD_HEIGHT}, il faut aligner <strong>{Math.min(BOARD_WIDTH, BOARD_HEIGHT)}</strong> symboles horizontalement, verticalement ou en diagonale pour remporter la partie.
         </p>
       </div>
       <div className={styles.rules_section}>
@@ -154,6 +157,17 @@ export function SettingsMenu({ isSoundEnabled, onSoundToggle, language, onLangua
                         {language === "en" ? "EN (coming soon)" : "FR"}
                       </span>
                     </motion.button>
+
+                    {/* Board Size Display */}
+                    <div className={styles.menu_item}>
+                      <div className={styles.menu_item__content}>
+                        <GamepadDirectional className={styles.menu_item__icon} />
+                        <span className={styles.menu_item__label}>Plateau</span>
+                      </div>
+                      <span className={styles.menu_item__value}>
+                        {`Largeur : ${BOARD_WIDTH} | Hauteur : ${BOARD_HEIGHT}`}
+                      </span>
+                    </div>
 
                     {/* Rules Button */}
                     <motion.button

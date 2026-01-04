@@ -133,7 +133,7 @@ public class GameService
     private List<int[]> GenerateWinningCombinations(int width, int height)
     {
         List<int[]> combinations = new();
-        int winLength = 3; // Longueur à aligner pour gagner (toujours 3)
+        int winLength = Math.Min(width, height); // Longueur à aligner pour gagner (dynamique)
 
         // 1. Lignes horizontales (toutes les séquences de winLength dans chaque ligne)
         for (int row = 0; row < height; row++)
