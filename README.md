@@ -1,3 +1,4 @@
+# Trigger Azure Static Web Apps deployment test
 # TicTacToe
 
 Application TicTacToe complète avec backend .NET 10 et frontend React + TypeScript.
