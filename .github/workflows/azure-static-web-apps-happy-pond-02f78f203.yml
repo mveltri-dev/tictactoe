@@ -37,6 +37,9 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Ensure dist directory exists
+        run: mkdir -p src/frontend/dist
+
       - name: Copy staticwebapp.config.json to dist
         run: cp src/frontend/staticwebapp.config.json src/frontend/dist/staticwebapp.config.json
       - name: Build And Deploy
