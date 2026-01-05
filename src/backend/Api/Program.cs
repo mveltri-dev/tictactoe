@@ -112,12 +112,22 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                Environment.GetEnvironmentVariable("FRONTEND_AZURE_URL") ?? Env.GetString("FRONTEND_LOCAL_URL")
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); 
+        var azureUrl = Environment.GetEnvironmentVariable("FRONTEND_AZURE_URL");
+        var localUrl = Env.GetString("FRONTEND_LOCAL_URL");
+        if (!string.IsNullOrWhiteSpace(azureUrl))
+        {
+            policy.WithOrigins(azureUrl)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins(localUrl)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
     });
 });
 
