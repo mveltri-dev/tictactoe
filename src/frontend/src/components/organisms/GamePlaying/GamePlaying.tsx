@@ -247,7 +247,10 @@ export function GamePlaying({
         mmService.declineRematch(pendingGameId).catch(console.error)
       }
     }
-    // Log avant LeaveGame
+    // Appel explicite à LeaveGame sur le hub SignalR avant de quitter la partie
+    if (game.id && config.gameMode === "VsPlayerOnline" && mmService.getConnection()) {
+      mmService.getConnection()?.invoke("LeaveGame", game.id).catch(console.error)
+    }
     console.log('[DEBUG] Appel LeaveGame sur le hub pour gameId:', game.id)
     navigate('/lobby')
   }
