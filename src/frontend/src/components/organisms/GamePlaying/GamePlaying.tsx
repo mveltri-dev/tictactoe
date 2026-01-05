@@ -94,9 +94,20 @@ export function GamePlaying({
       try {
         const userIdRaw = authService.getUserIdFromToken()
         const userId = userIdRaw ?? ""
-        // Appel explicite à LeaveGame avant d'abandonner
-        if (mmService.getConnection()) {
-          await mmService.getConnection()?.invoke("LeaveGame", game.id)
+        // S'assurer que la connexion SignalR est prête
+        let conn = mmService.getConnection()
+        if (!conn || conn.state !== "Connected") {
+          console.warn("[DEBUG] SignalR non connectée, tentative de reconnexion...")
+          await mmService.initializeConnection()
+          conn = mmService.getConnection()
+        }
+        if (conn && conn.state === "Connected") {
+          await conn.invoke("LeaveGame", game.id)
+          console.log("[DEBUG] LeaveGame appelé avec succès (abandon)")
+          // Attendre un court délai pour garantir l'envoi du message
+          await new Promise(res => setTimeout(res, 250))
+        } else {
+          console.error("[DEBUG] Impossible d'appeler LeaveGame : SignalR non connectée")
         }
         await mmService.forfeitGame(game.id, userId)
         navigate("/lobby")
