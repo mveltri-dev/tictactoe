@@ -29,6 +29,8 @@ class SignalRService {
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${BASE_URL}/gamehub`, {
         accessTokenFactory: () => token,
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets
       })
       .withAutomaticReconnect()
       .build()
