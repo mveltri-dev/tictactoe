@@ -55,7 +55,7 @@ public class GameDTO
         /// <summary>
         /// Positions des cases formant la ligne gagnante (index 0-8), ou null si pas de gagnant.
         /// </summary>
-        public int[]? WinningLine { get; set; }
+    public int[]? WinningLine { get; set; }
 
     /// <summary>
     /// Date et heure de création de la partie.

@@ -14,6 +14,29 @@ namespace Infrastructure.Services;
 /// </summary>
 public class GameService
 {
+    
+    private readonly TicTacToeDbContext _dbContext;
+    private readonly IGameNotificationService? _notificationService;
+    
+    // Cache en mémoire pour les parties locales (VsComputer, VsLocal)
+    private static readonly Dictionary<Guid, Game> _inMemoryGames = new();
+    private static readonly Dictionary<Guid, Player> _inMemoryPlayers = new();
+    private static readonly object _cacheLock = new();
+    
+    // Nettoyage automatique des parties de plus de 24h
+    private static DateTime _lastCleanup = DateTime.UtcNow;
+    private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan GameExpiration = TimeSpan.FromHours(24);
+
+    public GameService(
+        TicTacToeDbContext dbContext, 
+        IGameNotificationService? notificationService = null)
+    {
+        _dbContext = dbContext;
+        _notificationService = notificationService;
+        CleanupExpiredGames();
+    }
+
     /// <summary>
     /// Permet à un joueur d'abandonner une partie en cours (défaite).
     /// </summary>
@@ -54,7 +77,9 @@ public class GameService
         game.WinnerId = winnerSymbol == PlayerSymbol.X ? game.PlayerXId : game.PlayerOId;
         // Optionnel : WinningLine = null (abandon)
         game.SetWinningLine(null);
-        // Persister
+        // Sauvegarder la partie modifiée :
+        // - en mémoire si partie locale (VsComputer, VsPlayerLocal)
+        // - en base de données si partie en ligne (VsPlayerOnline)
         if (isInMemory)
         {
             lock (_cacheLock)
@@ -68,27 +93,6 @@ public class GameService
             await _dbContext.SaveChangesAsync();
         }
         return GameMapper.ToDTO(game);
-    }
-    private readonly TicTacToeDbContext _dbContext;
-    private readonly IGameNotificationService? _notificationService;
-    
-    // Cache en mémoire pour les parties locales (VsComputer, VsLocal)
-    private static readonly Dictionary<Guid, Game> _inMemoryGames = new();
-    private static readonly Dictionary<Guid, Player> _inMemoryPlayers = new();
-    private static readonly object _cacheLock = new();
-    
-    // Nettoyage automatique des parties de plus de 24h
-    private static DateTime _lastCleanup = DateTime.UtcNow;
-    private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
-    private static readonly TimeSpan GameExpiration = TimeSpan.FromHours(24);
-
-    public GameService(
-        TicTacToeDbContext dbContext, 
-        IGameNotificationService? notificationService = null)
-    {
-        _dbContext = dbContext;
-        _notificationService = notificationService;
-        CleanupExpiredGames();
     }
 
     /// <summary>
@@ -132,24 +136,34 @@ public class GameService
     /// <returns>Liste des combinaisons gagnantes.</returns>
     private List<int[]> GenerateWinningCombinations(int width, int height)
     {
+        // Génère toutes les façons de gagner (aligner winLength symboles) pour un plateau de taille width x height
         List<int[]> combinations = new();
-        int winLength = Math.Min(width, height); // Longueur à aligner pour gagner (dynamique)
+        // Nombre de symboles à aligner pour gagner (ex : 3 pour 3x3, 4 pour 4x4)
+        int winLength = Math.Min(width, height);
 
-        // 1. Lignes horizontales (toutes les séquences de winLength dans chaque ligne)
+        // 1. Parcourt chaque ligne pour trouver toutes les séquences horizontales gagnantes
         for (int row = 0; row < height; row++)
         {
+            // On parcourt chaque ligne du plateau
             for (int startCol = 0; startCol <= width - winLength; startCol++)
             {
+                // On va construire une séquence de winLength cases alignées horizontalement
                 int[] line = new int[winLength];
                 for (int i = 0; i < winLength; i++)
                 {
+                    // Calcul de l'index dans le tableau 1D :
+                    // row * width = début de la ligne
+                    // startCol = décalage de départ dans la ligne
+                    // i = position dans la séquence gagnante
+                    // Exemple : sur un 3x3, la 2e ligne commence à l'index 3 (row=1, width=3)
                     line[i] = row * width + startCol + i;
                 }
+                // On ajoute la séquence trouvée à la liste des combinaisons gagnantes
                 combinations.Add(line);
             }
         }
 
-        // 2. Colonnes verticales (toutes les séquences de winLength dans chaque colonne)
+        // 2. Parcourt chaque colonne pour trouver toutes les séquences verticales gagnantes
         for (int col = 0; col < width; col++)
         {
             for (int startRow = 0; startRow <= height - winLength; startRow++)
@@ -163,7 +177,7 @@ public class GameService
             }
         }
 
-        // 3. Diagonales descendantes (\) - toutes les séquences de winLength
+        // 3. Parcourt les diagonales descendantes (\) pour trouver toutes les séquences gagnantes
         for (int row = 0; row <= height - winLength; row++)
         {
             for (int col = 0; col <= width - winLength; col++)
@@ -177,7 +191,7 @@ public class GameService
             }
         }
 
-        // 4. Diagonales ascendantes (/) - toutes les séquences de winLength
+        // 4. Parcourt les diagonales ascendantes (/) pour trouver toutes les séquences gagnantes
         for (int row = 0; row <= height - winLength; row++)
         {
             for (int col = winLength - 1; col < width; col++)
@@ -191,6 +205,7 @@ public class GameService
             }
         }
 
+        // Retourne la liste de toutes les combinaisons gagnantes possibles
         return combinations;
     }
 

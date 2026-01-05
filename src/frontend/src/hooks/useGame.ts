@@ -91,8 +91,8 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
   useEffect(() => {
     if (game && game.status !== "InProgress") {
       setAppState("finished")
-      // Mettre à jour les scores SEULEMENT si le statut vient de changer ET en mode local/IA
-      if ((config?.gameMode === "VsComputer" || config?.gameMode === "VsPlayerLocal") && (previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null)) {
+      // Mettre à jour les scores SEULEMENT si le statut vient de changer
+      if ((previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null)) {
         if (game.status === "XWins") {
           setScores(prev => ({ ...prev, X: prev.X + 1 }))
         } else if (game.status === "OWins") {

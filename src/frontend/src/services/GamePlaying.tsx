@@ -1,14 +1,14 @@
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { useToast } from "../toast/toast"
-import type { GameDTO, GameModeAPI, Symbol, AppState } from "../../../dtos"
-import { GameBoard } from "../GameBoard/GameBoard"
-import { StatusDisplay } from "../../molecules"
-import { ScoreBadge, GameButton } from "../../atoms"
-import { GameControls } from "../../molecules"
+import { useToast } from "@/components/organisms/toast/toast"
+import type { GameDTO, GameModeAPI, Symbol, AppState } from "@/dtos"
+import { GameBoard } from "@/components/organisms"
+import { StatusDisplay } from "@/components/molecules"
+import { ScoreBadge, GameButton } from "@/components/atoms"
+import { GameControls } from "@/components/molecules"
 import { Home, RotateCcw, Clock } from "lucide-react"
-import { matchmakingService, MatchmakingService } from "../../../services/matchmakingService"
+import { matchmakingService, MatchmakingService } from "@/services/matchmakingService"
 const mmService: MatchmakingService = matchmakingService
 // @ts-ignore
 import { authService } from "../../../services/authService"
@@ -65,20 +65,18 @@ export function GamePlaying({
 }: GamePlayingProps) {
   // Appel à JoinGame dès que la connexion SignalR est prête
   useEffect(() => {
-    const conn = mmService.getConnection()
-    onRestart,
-    modeLabel
-  }: GamePlayingProps) {
-      game.id &&
-      conn &&
-      conn.state === "Connected"
-    ) {
-      console.log('[DEBUG SignalR] Appel JoinGame (connexion) sur le hub pour gameId:', game.id)
-      conn.invoke("JoinGame", game.id)
-    } else {
-      console.log('[DEBUG SignalR] JoinGame (connexion) NON appelé (état)', { gameId: game.id, mode: config.gameMode, connState: conn?.state })
-    }
-  }, [game.id, config.gameMode, mmService.getConnection()])
+  const conn = mmService.getConnection()
+  if (
+    game.id &&
+    conn &&
+    conn.state === "Connected"
+  ) {
+    console.log('[DEBUG SignalR] Appel JoinGame (connexion) sur le hub pour gameId:', game.id)
+    conn.invoke("JoinGame", game.id)
+  } else {
+    console.log('[DEBUG SignalR] JoinGame (connexion) NON appelé (état)', { gameId: game.id, mode: config.gameMode, connState: conn?.state })
+  }
+}, [game.id, config.gameMode, mmService.getConnection()])
   console.log('[DEBUG] GamePlaying monté, gameId:', game.id, 'mode:', config.gameMode)
   const navigate = useNavigate()
   const [rematchStatus, setRematchStatus] = useState<'idle' | 'waiting' | 'opponent-waiting' | 'opponent-left'>('idle')
@@ -144,19 +142,19 @@ export function GamePlaying({
     })
     // Écouter les demandes de rematch (nouvel événement dédié)
     mmService.onRematchRequest((data: any) => {
-      console.log('🔄 Demande de rematch reçue:', data)
+      console.log('Demande de rematch reçue:', data)
       
       // Vérifier si c'est une demande de l'adversaire actuel
       if (data.requesterId === opponentId) {
         if (rematchStatus === 'waiting' && pendingGameId) {
           // Les deux veulent rejouer ! Accepter automatiquement
-          console.log('✅ Les deux joueurs veulent rejouer ! Acceptation automatique')
+          console.log('Les deux joueurs veulent rejouer ! Acceptation automatique')
           matchmakingService.acceptRematch(data.gameId).then(() => {
             navigate(`/game/${data.gameId}`)
           })
         } else {
           // L'adversaire veut rejouer, on stocke la demande
-          console.log('📥 L\'adversaire veut rejouer, demande stockée')
+          console.log('L\'adversaire veut rejouer, demande stockée')
           setPendingGameId(data.gameId)
           setRematchStatus('opponent-waiting')
         }
@@ -165,7 +163,7 @@ export function GamePlaying({
     
     // Écouter si l'adversaire refuse le rematch
     mmService.onRematchDeclined((data: any) => {
-      console.log('❌ Rematch refusé:', data)
+      console.log('Rematch refusé:', data)
       // Mettre à jour l'état pour montrer que l'adversaire a quitté
       setRematchStatus((current) => {
         console.log('État actuel:', current)
@@ -192,11 +190,11 @@ export function GamePlaying({
     
     // Écouter si l'adversaire accepte le rematch
     mmService.onRematchAccepted((data: any) => {
-      console.log('✅ Rematch accepté:', data)
+      console.log('Rematch accepté:', data)
       setRematchStatus((current) => {
         if (current === 'waiting') {
           // L'adversaire a accepté, naviguer vers la partie
-          console.log('🎮 Navigation vers la partie acceptée:', data.gameId)
+          console.log('Navigation vers la partie acceptée:', data.gameId)
           navigate(`/game/${data.gameId}`)
         }
         return current
@@ -211,12 +209,12 @@ export function GamePlaying({
       const userId = authService.getUserIdFromToken()
       const opponentId = userId === game.playerXId ? game.playerOId : game.playerXId
       
-      console.log('🔄 Demande de rematch avec:', opponentId)
+      console.log('Demande de rematch avec:', opponentId)
       
       // Vérifier si l'adversaire a déjà envoyé une demande de rematch
       if (pendingGameId) {
         // Les deux veulent rejouer ! Accepter la demande de l'adversaire
-        console.log('✅ Les deux joueurs veulent rejouer ! Acceptation de la demande')
+        console.log('Les deux joueurs veulent rejouer ! Acceptation de la demande')
         await mmService.acceptRematch(pendingGameId)
         navigate(`/game/${pendingGameId}`)
         return
@@ -224,13 +222,13 @@ export function GamePlaying({
       
       // Envoyer notre demande de rematch
       const result = await mmService.requestRematch(opponentId)
-      console.log('✅ Demande de rematch envoyée, gameId:', result.gameId)
+      console.log('Demande de rematch envoyée, gameId:', result.gameId)
       
       // Passer en mode attente
       setRematchStatus('waiting')
       setPendingGameId(result.gameId)
     } catch (error) {
-      console.error('❌ Erreur lors de la réinvitation:', error)
+      console.error('Erreur lors de la réinvitation:', error)
       setRematchStatus('opponent-left')
     }
   }

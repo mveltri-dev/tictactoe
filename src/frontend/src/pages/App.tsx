@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react"
-// Le fichier global.d.ts est automatiquement inclus par TypeScript s'il est dans src/types ou référencé dans tsconfig.json
 import { useToast } from "../components/organisms/toast/toast"
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
