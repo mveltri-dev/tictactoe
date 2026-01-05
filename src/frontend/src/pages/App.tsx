@@ -51,10 +51,13 @@ export function App() {
     }, [])
   const { showError, showSuccess, showInfo } = useToast()
   const navigate = useNavigate()
-  const location = useLocation()
   const [isSoundEnabled, setIsSoundEnabled] = useState(true)
   const [language, setLanguage] = useState("fr")
-  const [gameMode, setGameMode] = useState<GameModeAPI>("VsComputer")
+  const location = useLocation()
+  const [gameMode, setGameMode] = useState<GameModeAPI>(() => {
+    if (window.location.pathname === '/lobby') return 'VsPlayerOnline'
+    return 'VsComputer'
+  })
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
   // Flag pour ignorer le chargement de partie après un changement de mode
   const ignoreNextLoadRef = useRef(false)
@@ -160,6 +163,8 @@ export function App() {
     try {
       const response = await authService.login(username, password)
       setToken(response.token)
+      resetGame() // Ajout : reset complet du jeu après login
+      setGameMode('VsComputer') // Remise à zéro du mode de jeu pour un lobby neutre
       showSuccess("Connexion réussie !")
       navigate('/lobby')
     } catch (err: any) {
@@ -186,6 +191,8 @@ export function App() {
   const handleLogin = (userToken: string) => {
     setToken(userToken)
     localStorage.setItem('token', userToken)
+    resetGame() // Ajout : reset complet du jeu après login
+    setGameMode('VsComputer') // Remise à zéro du mode de jeu pour un lobby neutre
     navigate('/lobby')
   }
 
@@ -198,7 +205,12 @@ export function App() {
   }
 
   const handleGameFound = (gameId: string, opponentUsername: string, yourSymbol: "X" | "O") => {
-    navigate(`/game/${gameId}`)
+    resetGame()
+    // On charge la partie après le reset pour garantir un état propre et scores à zéro
+    setTimeout(() => {
+      loadGame(gameId)
+      navigate(`/game/${gameId}`)
+    }, 0)
   }
 
   const handleStartGameAuto = async (mode: GameModeAPI, symbol: "X" | "O") => {

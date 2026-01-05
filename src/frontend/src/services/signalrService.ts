@@ -3,9 +3,6 @@ import type { RoomDTO, GameDTO } from '../dtos'
 import { authService } from './authService'
 
 const BASE_URL = import.meta.env.VITE_API_LOCAL_URL || import.meta.env.VITE_API_AZURE_URL
-console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : VITE_API_LOCAL_URL =', import.meta.env.VITE_API_LOCAL_URL, '❗❗❗❗❗❗❗❗❗❗')
-console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : VITE_API_AZURE_URL =', import.meta.env.VITE_API_AZURE_URL, '❗❗❗❗❗❗❗❗❗❗')
-console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : BASE_URL utilisé pour SignalR =', BASE_URL, '❗❗❗❗❗❗❗❗❗❗')
 
 type GameEventCallbacks = {
   onPlayerJoinedRoom?: (room: RoomDTO) => void
@@ -20,62 +17,44 @@ class SignalRService {
   private callbacks: GameEventCallbacks = {}
 
   async connect(): Promise<void> {
-    console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalRService.connect() called ❗❗❗❗❗❗❗❗❗❗');
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR déjà connecté ❗❗❗❗❗❗❗❗❗❗');
       return
     }
 
     const token = authService.getToken()
-    console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR token =', token, '❗❗❗❗❗❗❗❗❗❗');
     if (!token) {
       throw new Error('Authentification requise pour SignalR')
     }
 
-    console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR BASE_URL =', BASE_URL, '❗❗❗❗❗❗❗❗❗❗');
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${BASE_URL}/gamehub`, {
-        accessTokenFactory: () => {
-          console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR accessTokenFactory appelé ❗❗❗❗❗❗❗❗❗❗');
-          return token;
-        },
+        accessTokenFactory: () => token,
       })
       .withAutomaticReconnect()
       .build()
 
     // Enregistrer les handlers
     this.connection.on('PlayerJoinedRoom', (room: RoomDTO) => {
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR: PlayerJoinedRoom', room, '❗❗❗❗❗❗❗❗❗❗')
       this.callbacks.onPlayerJoinedRoom?.(room)
     })
 
     this.connection.on('GameStarted', (room: RoomDTO) => {
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR: GameStarted', room, '❗❗❗❗❗❗❗❗❗❗')
       this.callbacks.onGameStarted?.(room)
     })
 
     this.connection.on('MovePlayed', (game: GameDTO) => {
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR: MovePlayed', game, '❗❗❗❗❗❗❗❗❗❗')
       this.callbacks.onMovePlayed?.(game)
     })
 
     this.connection.on('GameEnded', (game: GameDTO) => {
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR: GameEnded', game, '❗❗❗❗❗❗❗❗❗❗')
       this.callbacks.onGameEnded?.(game)
     })
 
     this.connection.on('RoomClosed', (roomId: string) => {
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR: RoomClosed', roomId, '❗❗❗❗❗❗❗❗❗❗')
       this.callbacks.onRoomClosed?.(roomId)
     })
 
-    try {
-      await this.connection.start()
-      console.log('❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR connecté avec succès ❗❗❗❗❗❗❗❗❗❗')
-    } catch (err) {
-      console.error('❗❗❗❗❗❗❗❗❗❗[DEBUG] : Erreur lors de la connexion SignalR', err, '❗❗❗❗❗❗❗❗❗❗')
-      throw err
-    }
+    await this.connection.start()
   }
 
   async disconnect(): Promise<void> {

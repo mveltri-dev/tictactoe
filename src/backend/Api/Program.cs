@@ -11,15 +11,9 @@ using DotNetEnv;
 // Charger les variables d'environnement depuis .env UNIQUEMENT en développement local
 // En production Azure, les variables sont chargées automatiquement
 var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
-Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : Chemin .env = {envPath} ❗❗❗❗❗❗❗❗❗❗");
 if (File.Exists(envPath))
 {
-    Console.WriteLine("❗❗❗❗❗❗❗❗❗❗[DEBUG] : Chargement du fichier .env ❗❗❗❗❗❗❗❗❗❗");
     Env.Load(envPath);
-}
-else
-{
-    Console.WriteLine("❗❗❗❗❗❗❗❗❗❗[DEBUG] : Aucun fichier .env trouvé ❗❗❗❗❗❗❗❗❗❗");
 }
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,7 +30,6 @@ var user = Environment.GetEnvironmentVariable("DB_USER") ?? Env.GetString("DB_US
 var database = Environment.GetEnvironmentVariable("DB_NAME") ?? Env.GetString("DB_NAME");
 var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? Env.GetString("DB_PASSWORD");
 var port = Environment.GetEnvironmentVariable("DB_PORT") ?? Env.GetString("DB_PORT") ?? "5432";
-Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : DB_HOST={host}, DB_USER={user}, DB_NAME={database}, DB_PASSWORD={(string.IsNullOrEmpty(password) ? "(vide)" : "****")}, DB_PORT={port} ❗❗❗❗❗❗❗❗❗❗");
 
 if (string.IsNullOrEmpty(password))
 {
@@ -66,9 +59,7 @@ var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? Env.GetString("JWT_ISSUER") ?? "TicTacToeApi";
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? Env.GetString("JWT_AUDIENCE") ?? "TicTacToeClient";
 
-// LOG DEBUG
-Console.WriteLine($"@@@@++++++++++DEBUG++++ [Program.cs] JWT_SECRET used for validation: {jwtSecret}");
-Console.WriteLine($"@@@@++++++++++DEBUG++++ [Program.cs] JWT_ISSUER: {jwtIssuer}, JWT_AUDIENCE: {jwtAudience}");
+// ...
 
 builder.Configuration["Jwt:Secret"] = jwtSecret;
 builder.Configuration["Jwt:Issuer"] = jwtIssuer;
@@ -98,11 +89,9 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR OnMessageReceived access_token={accessToken}, path={path} ❗❗❗❗❗❗❗❗❗❗");
             // Si la requête vient du hub SignalR et contient un token
             if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/gamehub"))
             {
-                Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR token injecté dans le contexte ❗❗❗❗❗❗❗❗❗❗");
                 context.Token = accessToken;
             }
             return Task.CompletedTask;
@@ -119,11 +108,8 @@ builder.Services.AddCors(options =>
     {
         var azureUrl = Environment.GetEnvironmentVariable("FRONTEND_AZURE_URL");
         var localUrl = Env.GetString("FRONTEND_LOCAL_URL");
-        Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : FRONTEND_AZURE_URL (env) = {azureUrl} ❗❗❗❗❗❗❗❗❗❗");
-        Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : FRONTEND_LOCAL_URL (.env) = {localUrl} ❗❗❗❗❗❗❗❗❗❗");
         if (!string.IsNullOrWhiteSpace(azureUrl))
         {
-            Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : Utilisation de FRONTEND_AZURE_URL pour CORS : {azureUrl} ❗❗❗❗❗❗❗❗❗❗");
             policy.WithOrigins(azureUrl)
                   .AllowAnyHeader()
                   .AllowAnyMethod()
@@ -131,7 +117,6 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            Console.WriteLine($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : Utilisation de FRONTEND_LOCAL_URL pour CORS : {localUrl} ❗❗❗❗❗❗❗❗❗❗");
             policy.WithOrigins(localUrl)
                   .AllowAnyHeader()
                   .AllowAnyMethod()
@@ -201,16 +186,16 @@ app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/gamehub"))
     {
-        app.Logger.LogInformation($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR Request: {context.Request.Method} {context.Request.Path} from {context.Request.Headers.Origin} ❗❗❗❗❗❗❗❗❗❗");
+        // ...
     }
     if (!string.IsNullOrEmpty(context.Request.Headers["Origin"]))
     {
-        app.Logger.LogInformation($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : CORS Origin: {context.Request.Headers["Origin"]} ❗❗❗❗❗❗❗❗❗❗");
+        // ...
     }
     await next();
     if (context.Request.Path.StartsWithSegments("/gamehub"))
     {
-        app.Logger.LogInformation($"❗❗❗❗❗❗❗❗❗❗[DEBUG] : SignalR Response: {context.Response.StatusCode} ❗❗❗❗❗❗❗❗❗❗");
+        // ...
     }
 });
 

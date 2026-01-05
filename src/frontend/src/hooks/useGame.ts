@@ -46,6 +46,10 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
   const [appState, setAppState] = useState<AppState>("configuration")
   const [error, setError] = useState<string | null>(null)
   const [scores, setScores] = useState<Scores>({ X: 0, O: 0, draws: 0 })
+  // DEBUG: log à chaque changement de scores
+  useEffect(() => {
+    console.log('[DEBUG][Scores] Scores actuels :', scores)
+  }, [scores])
   const autoRestartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previousGameStatusRef = useRef<string | null>(null)
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -91,13 +95,16 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
   useEffect(() => {
     if (game && game.status !== "InProgress") {
       setAppState("finished")
-      // Mettre à jour les scores SEULEMENT si le statut vient de changer
-      if ((previousGameStatusRef.current === "InProgress" || previousGameStatusRef.current === null)) {
+      // Incrémenter les scores uniquement si la partie précédente existe vraiment (éviter après reset)
+      if (previousGameStatusRef.current === "InProgress" && game) {
         if (game.status === "XWins") {
+          console.log('[DEBUG][SCORES] Incrément X (victoire X)')
           setScores(prev => ({ ...prev, X: prev.X + 1 }))
         } else if (game.status === "OWins") {
+          console.log('[DEBUG][SCORES] Incrément O (victoire O)')
           setScores(prev => ({ ...prev, O: prev.O + 1 }))
         } else if (game.status === "Draw") {
+          console.log('[DEBUG][SCORES] Incrément Draw (match nul)')
           setScores(prev => ({ ...prev, draws: prev.draws + 1 }))
         }
       }
@@ -142,7 +149,11 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
         height: request.height ?? 3
       }
       setConfig(newConfig)
+      // Toujours reset les scores pour toute nouvelle partie en ligne (matchmaking), même si c'est le même match
       if (request.gameMode === "VsPlayerOnline") {
+        console.log('[DEBUG][createGame] RESET SCORES pour nouvelle partie en ligne (matchmaking)')
+        setScores({ X: 0, O: 0, draws: 0 })
+        previousGameStatusRef.current = null
         setError(null)
         setAppState("loading")
       }
@@ -222,25 +233,26 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
           // Ne pas bloquer le chargement si SignalR échoue
         }
       }
-      
-      // Pour les parties locales, NE PAS écraser la config locale
-      if (loadedGame.mode === "VsComputer" || loadedGame.mode === "VsPlayerLocal") {
-        // Mettre à jour la config locale AVEC la taille du plateau du backend
-        setConfig((prev) => ({
-          ...prev!,
-          width: loadedGame.width ?? 3,
-          height: loadedGame.height ?? 3
-        }))
-      } else {
-        setConfig({
-          player1Name: playerXName,
-          player2Name: playerOName,
-          chosenSymbol,
-          gameMode: loadedGame.mode as GameModeAPI,
-          width: loadedGame.width ?? 3,
-          height: loadedGame.height ?? 3
-        })
-      }
+      // Correction : toujours forcer la cohérence du mode de jeu dans la config
+      setConfig((prev) => {
+        // Si la config locale n'existe pas ou n'est pas cohérente avec la partie chargée, on la remplace
+        if (!prev || prev.gameMode !== loadedGame.mode) {
+          return {
+            player1Name: playerXName,
+            player2Name: playerOName,
+            chosenSymbol,
+            gameMode: loadedGame.mode as GameModeAPI,
+            width: loadedGame.width ?? 3,
+            height: loadedGame.height ?? 3
+          }
+        }
+        // Sinon, on met juste à jour la taille du plateau si besoin
+        return {
+          ...prev,
+          width: loadedGame.width ?? prev.width ?? 3,
+          height: loadedGame.height ?? prev.height ?? 3
+        }
+      })
       previousGameStatusRef.current = loadedGame.status
       setAppState(loadedGame.status === "InProgress" ? "playing" : "finished")
     } catch (err) {
@@ -291,11 +303,12 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
     if (autoRestartTimeoutRef.current) {
       clearTimeout(autoRestartTimeoutRef.current)
     }
+    // Toujours reset les scores, même si on revient au lobby ou qu'on change de mode
+    setScores({ X: 0, O: 0, draws: 0 })
     setGame(null)
     setConfig(null)
     setAppState("configuration")
     setError(null)
-    setScores({ X: 0, O: 0, draws: 0 })
     previousGameStatusRef.current = null
   }, [])
 
@@ -305,6 +318,7 @@ export function useGame(onAutoRestarted?: (newGameId: string) => void): UseGameR
 
   const changeGameMode = useCallback((mode: GameModeAPI) => {
     setConfig(prev => prev ? { ...prev, gameMode: mode } : null)
+    // On force le reset complet (scores inclus) à chaque changement de mode
     resetGame()
   }, [resetGame])
 
