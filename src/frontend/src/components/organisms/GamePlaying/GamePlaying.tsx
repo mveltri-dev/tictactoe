@@ -94,6 +94,10 @@ export function GamePlaying({
       try {
         const userIdRaw = authService.getUserIdFromToken()
         const userId = userIdRaw ?? ""
+        // Appel explicite à LeaveGame avant d'abandonner
+        if (mmService.getConnection()) {
+          await mmService.getConnection()?.invoke("LeaveGame", game.id)
+        }
         await mmService.forfeitGame(game.id, userId)
         navigate("/lobby")
       } catch (err: any) {
