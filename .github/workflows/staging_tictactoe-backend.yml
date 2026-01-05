@@ -23,6 +23,20 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      - name: Create .env file from secrets
+        shell: bash
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> src/backend/.env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> src/backend/.env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> src/backend/.env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> src/backend/.env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> src/backend/.env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> src/backend/.env
+          echo "JWT_ISSUER=${{ secrets.JWT_ISSUER }}" >> src/backend/.env
+          echo "JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}" >> src/backend/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> src/backend/.env
+          echo "FRONTEND_AZURE_URL=${{ secrets.FRONTEND_AZURE_URL }}" >> src/backend/.env
+
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
