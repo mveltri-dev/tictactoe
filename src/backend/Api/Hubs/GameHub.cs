@@ -21,7 +21,6 @@ public class GameHub : Hub
         var userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         Console.WriteLine($"[SignalR Hub] NameIdentifier trouvé: {userId ?? "NULL"}");
         
-        // Essayons aussi avec "sub" qui est le claim standard JWT
         if (userId == null)
         {
             userId = Context.User?.FindFirst("sub")?.Value;
@@ -73,6 +72,7 @@ public class GameHub : Hub
     /// Rejoindre un groupe de room.
     /// </summary>
     public async Task JoinRoom(string roomId)
+    {
         Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ENTER] JoinRoom - ConnexionId: {Context.ConnectionId}, RoomId: {roomId} ◽◽◽◽◽◽");
         try
         {
@@ -84,14 +84,13 @@ public class GameHub : Hub
             Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ERROR] JoinRoom - ConnexionId: {Context.ConnectionId}, RoomId: {roomId}, Exception: {ex} ◽◽◽◽◽◽");
             throw;
         }
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{roomId}");
     }
 
     /// <summary>
     /// Quitter un groupe de room.
     /// </summary>
     public async Task LeaveRoom(string roomId)
+    {
         Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ENTER] LeaveRoom - ConnexionId: {Context.ConnectionId}, RoomId: {roomId} ◽◽◽◽◽◽");
         try
         {
@@ -103,14 +102,13 @@ public class GameHub : Hub
             Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ERROR] LeaveRoom - ConnexionId: {Context.ConnectionId}, RoomId: {roomId}, Exception: {ex} ◽◽◽◽◽◽");
             throw;
         }
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"room_{roomId}");
     }
 
     /// <summary>
     /// Rejoindre un groupe de partie.
     /// </summary>
     public async Task JoinGame(string gameId)
+    {
         Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ENTER] JoinGame - ConnexionId: {Context.ConnectionId}, GameId: {gameId} ◽◽◽◽◽◽");
         try
         {
@@ -125,19 +123,13 @@ public class GameHub : Hub
             Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ERROR] JoinGame - ConnexionId: {Context.ConnectionId}, GameId: {gameId}, Exception: {ex} ◽◽◽◽◽◽");
             throw;
         }
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"game_{gameId}");
-        // Stocker le gameId dans Context.Items pour le récupérer lors de la déconnexion
-        Context.Items["gameId"] = gameId;
-
-        var userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] JoinGame - ConnexionId: {Context.ConnectionId}, UserId: {userId ?? "NULL"}, GameId: {gameId} ◽◽◽◽◽◽");
     }
 
     /// <summary>
     /// Quitter un groupe de partie.
     /// </summary>
     public async Task LeaveGame(string gameId)
+    {
         Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ENTER] LeaveGame - ConnexionId: {Context.ConnectionId}, GameId: {gameId} ◽◽◽◽◽◽");
         try
         {
@@ -161,19 +153,6 @@ public class GameHub : Hub
             Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] [ERROR] LeaveGame - ConnexionId: {Context.ConnectionId}, GameId: {gameId}, Exception: {ex} ◽◽◽◽◽◽");
             throw;
         }
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"game_{gameId}");
-        var userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (userId != null)
-        {
-            Console.WriteLine($"[SignalR Hub] LeaveGame: OpponentLeft envoyé au groupe game_{gameId} pour userId={userId}");
-            await Clients.Group($"game_{gameId}").SendAsync("OpponentLeft", userId);
-        }
-        else
-        {
-            Console.WriteLine($"[SignalR Hub] LeaveGame: userId est NULL pour gameId={gameId}");
-        }
-        Console.WriteLine($"◽◽◽◽◽◽ [DEBUG][SignalR] LeaveGame - ConnexionId: {Context.ConnectionId}, UserId: {userId ?? "NULL"}, GameId: {gameId} ◽◽◽◽◽◽");
     }
 }
 
